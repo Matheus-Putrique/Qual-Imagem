@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,7 +21,8 @@ import com.example.qualimagem.viewmodel.RankingViewModel
 @Composable
 fun DetalheItemScreen(
     id: Int,
-    viewModel: RankingViewModel
+    viewModel: RankingViewModel,
+    onVoltar: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val item = uiState.itens.firstOrNull { it.id == id }
@@ -33,6 +35,13 @@ fun DetalheItemScreen(
         if (item == null) {
             Text("Item não encontrado")
         } else {
+            Text(
+                text = item.nomeCorreto,
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             AsyncImage(
                 model = item.imagemUrl,
                 contentDescription = item.nomeCorreto,
@@ -44,11 +53,22 @@ fun DetalheItemScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            Text("Categoria: ${item.categoria}", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Dificuldade: ${item.dificuldade}", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
             Text("Região: ${item.subcategoria}", style = MaterialTheme.typography.titleMedium)
-
             Spacer(modifier = Modifier.height(12.dp))
-
             Text("Dica: ${item.dica}")
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = onVoltar,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Voltar")
         }
     }
 }

@@ -1,4 +1,3 @@
-
 package com.example.qualimagem.ui.jogo
 
 import androidx.compose.foundation.layout.Arrangement
@@ -51,7 +50,12 @@ fun JogoQuizScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(onClick = onVoltarInicio) {
+            Button(
+                onClick = {
+                    viewModel.sairDaPartida()
+                    onVoltarInicio()
+                }
+            ) {
                 Text("Voltar ao início")
             }
 
@@ -78,7 +82,7 @@ fun JogoQuizScreen(
 
             if (pergunta != null) {
                 Text(
-                    text = "Qual é o país desta bandeira?",
+                    text = "Qual é o nome desta imagem?",
                     style = MaterialTheme.typography.titleLarge
                 )
 
@@ -86,7 +90,7 @@ fun JogoQuizScreen(
 
                 AsyncImage(
                     model = pergunta.imagemUrl,
-                    contentDescription = "Bandeira para identificação",
+                    contentDescription = "Imagem para identificação",
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)

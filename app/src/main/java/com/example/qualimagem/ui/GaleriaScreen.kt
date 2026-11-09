@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,16 +37,7 @@ fun GaleriaScreen(
     onAbrirDetalhe: (Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val itens = uiState.itens
-    var busca by remember { mutableStateOf("") }
-    var categoriaSelecionada by remember { mutableStateOf("") }
     var categoriaExpandida by remember { mutableStateOf(false) }
-
-    val categorias = itens.map { it.categoria }.distinct().sorted()
-    val itensFiltrados = itens.filter { item ->
-        (categoriaSelecionada.isBlank() || item.categoria == categoriaSelecionada) &&
-            (busca.isBlank() || item.nomeCorreto.contains(busca.trim(), ignoreCase = true))
-    }
 
     Column(
         modifier = Modifier
@@ -57,15 +49,15 @@ fun GaleriaScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = busca,
-            onValueChange = { busca = it },
+            value = uiState.buscaGaleria,
+            onValueChange = { viewModel.alterarBuscaGaleria(it) },
             label = { Text("Buscar item") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
 
         TextButton(onClick = { categoriaExpandida = true }) {
-            Text(categoriaSelecionada.ifBlank { "Todas as categorias" })
+            Text(uiState.categoriaGaleriaSelecionada.ifBlank { "Todas as categorias" })
         }
         DropdownMenu(
             expanded = categoriaExpandida,
@@ -74,15 +66,15 @@ fun GaleriaScreen(
             DropdownMenuItem(
                 text = { Text("Todas as categorias") },
                 onClick = {
-                    categoriaSelecionada = ""
+                    viewModel.selecionarCategoriaGaleria("")
                     categoriaExpandida = false
                 }
             )
-            categorias.forEach { categoria ->
+            uiState.categoriasGaleria.forEach { categoria ->
                 DropdownMenuItem(
                     text = { Text(categoria) },
                     onClick = {
-                        categoriaSelecionada = categoria
+                        viewModel.selecionarCategoriaGaleria(categoria)
                         categoriaExpandida = false
                     }
                 )
@@ -90,7 +82,7 @@ fun GaleriaScreen(
         }
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(itensFiltrados, key = { it.id }) { item ->
+            items(uiState.itensGaleria, key = { it.id }) { item ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -106,7 +98,16 @@ fun GaleriaScreen(
                             contentDescription = item.nomeCorreto,
                             modifier = Modifier.size(64.dp)
                         )
-                        Text(item.nomeCorreto)
+                        Column {
+                            Text(
+                                text = item.nomeCorreto,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = "${item.categoria} - ${item.dificuldade}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
             }

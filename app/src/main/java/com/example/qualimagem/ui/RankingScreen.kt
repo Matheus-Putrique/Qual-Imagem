@@ -48,7 +48,7 @@ fun RankingScreen(viewModel: RankingViewModel) {
 
         OutlinedTextField(
             value = uiState.busca,
-            onValueChange = viewModel::alterarBusca,
+            onValueChange = { viewModel.alterarBusca(it) },
             label = { Text("Buscar jogador") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true

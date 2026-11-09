@@ -1,4 +1,3 @@
-
 package com.example.qualimagem.viewmodel
 
 import androidx.lifecycle.ViewModel
@@ -39,7 +38,15 @@ class JogoViewModel(
                     .sorted()
 
                 _uiState.update {
-                    it.copy(categorias = categorias)
+                    val categoriaPadrao = if (it.categoriaSelecionada.isBlank() && categorias.isNotEmpty()) {
+                        categorias.first()
+                    } else {
+                        it.categoriaSelecionada
+                    }
+                    it.copy(
+                        categorias = categorias,
+                        categoriaSelecionada = categoriaPadrao
+                    )
                 }
             }
         }
@@ -57,6 +64,15 @@ class JogoViewModel(
         }
     }
 
+    fun sairDaPartida() {
+        _uiState.update {
+            it.copy(
+                partidaIniciada = false,
+                partidaFinalizada = false
+            )
+        }
+    }
+
     fun iniciarPartida(
         categoria: String,
         dificuldade: String,
@@ -69,7 +85,8 @@ class JogoViewModel(
                 it.copy(
                     carregando = true,
                     mensagemErro = null,
-                    partidaIniciada = false
+                    partidaIniciada = false,
+                    partidaFinalizada = false
                 )
             }
 
@@ -117,7 +134,8 @@ class JogoViewModel(
                         acertos = 0,
                         perguntasRespondidas = 0,
                         carregando = false,
-                        partidaIniciada = true
+                        partidaIniciada = true,
+                        partidaFinalizada = false
                     )
                 }
 

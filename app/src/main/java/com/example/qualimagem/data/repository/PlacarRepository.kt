@@ -1,5 +1,6 @@
 package com.example.qualimagem.data.repository
 
+import android.util.Log
 import com.example.qualimagem.data.PlacarDAO
 import com.example.qualimagem.data.PlacarEntity
 import kotlinx.coroutines.flow.Flow
@@ -14,6 +15,7 @@ class PlacarRepository(
             placarDao.inserir(placar)
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("PlacarRepository", "Erro ao inserir placar: ${e.message}")
             Result.failure(e)
         }
     }
@@ -23,6 +25,7 @@ class PlacarRepository(
             placarDao.atualizar(placar)
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("PlacarRepository", "Erro ao atualizar placar: ${e.message}")
             Result.failure(e)
         }
     }
@@ -32,6 +35,7 @@ class PlacarRepository(
             placarDao.deletar(placar)
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("PlacarRepository", "Erro ao deletar placar: ${e.message}")
             Result.failure(e)
         }
     }

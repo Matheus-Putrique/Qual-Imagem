@@ -2,6 +2,7 @@ package com.example.qualimagem.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.qualimagem.data.ItemQuizEntity
 import com.example.qualimagem.data.PlacarEntity
 import com.example.qualimagem.data.repository.PlacarRepository
 import com.example.qualimagem.data.repository.QuizRepository
@@ -21,6 +22,7 @@ class RankingViewModel(
     val uiState: StateFlow<RankingUiState> = _uiState.asStateFlow()
 
     private var todosPlacares: List<PlacarEntity> = emptyList()
+    private var todosItens: List<ItemQuizEntity> = emptyList()
 
     init {
         viewModelScope.launch {
@@ -31,7 +33,8 @@ class RankingViewModel(
         }
         viewModelScope.launch {
             quizRepository.buscarTodos().collect { itens ->
-                _uiState.update { it.copy(itens = itens) }
+                todosItens = itens
+                atualizarGaleria()
             }
         }
     }
@@ -49,6 +52,16 @@ class RankingViewModel(
     fun alterarBusca(busca: String) {
         _uiState.update { it.copy(busca = busca) }
         atualizarLista()
+    }
+
+    fun selecionarCategoriaGaleria(categoria: String) {
+        _uiState.update { it.copy(categoriaGaleriaSelecionada = categoria) }
+        atualizarGaleria()
+    }
+
+    fun alterarBuscaGaleria(busca: String) {
+        _uiState.update { it.copy(buscaGaleria = busca) }
+        atualizarGaleria()
     }
 
     private fun atualizarLista() {
@@ -72,6 +85,29 @@ class RankingViewModel(
                 categorias = todosPlacares.map { placar -> placar.categoriaJogada }
                     .distinct().sorted(),
                 dificuldades = todosPlacares.map { placar -> placar.dificuldade }
+                    .distinct().sorted()
+            )
+        }
+    }
+
+    private fun atualizarGaleria() {
+        val estado = _uiState.value
+        val busca = estado.buscaGaleria.trim()
+
+        val itensFiltrados = todosItens
+            .filter { item ->
+                (estado.categoriaGaleriaSelecionada.isBlank() ||
+                    item.categoria == estado.categoriaGaleriaSelecionada) &&
+                    (busca.isBlank() ||
+                        item.nomeCorreto.contains(busca, ignoreCase = true))
+            }
+            .sortedBy { it.nomeCorreto }
+
+        _uiState.update {
+            it.copy(
+                itens = todosItens,
+                itensGaleria = itensFiltrados,
+                categoriasGaleria = todosItens.map { item -> item.categoria }
                     .distinct().sorted()
             )
         }
