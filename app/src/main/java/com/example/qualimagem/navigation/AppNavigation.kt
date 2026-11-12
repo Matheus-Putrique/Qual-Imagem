@@ -106,6 +106,7 @@ fun AppNavigation() {
             composable(Rotas.INICIO_JOGO) {
                 InicioJogoScreen(
                     viewModel = jogoViewModel,
+                    apelidoInicial = sessaoUiState.nickname,
                     onIniciarJogo = {
                         navController.navigate(Rotas.QUIZ)
                     }

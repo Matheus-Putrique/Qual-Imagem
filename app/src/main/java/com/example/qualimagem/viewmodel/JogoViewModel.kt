@@ -6,293 +6,362 @@ import com.example.qualimagem.data.ItemQuizEntity
 import com.example.qualimagem.data.PlacarEntity
 import com.example.qualimagem.data.repository.PlacarRepository
 import com.example.qualimagem.data.repository.QuizRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * Motor da partida. Toda a regra do jogo fica aqui (e não na tela):
+ * sorteio das perguntas e alternativas, vidas, pontos, dica,
+ * avanço de rodada e gravação do placar no fim.
+ */
 class JogoViewModel(
     private val quizRepository: QuizRepository,
     private val placarRepository: PlacarRepository
 ) : ViewModel() {
 
+    companion object {
+        const val TOTAL_RODADAS = 10
+        const val VIDAS_INICIAIS = 3
+        const val ALTERNATIVAS_POR_PERGUNTA = 4
+        const val TEMPO_FEEDBACK_MS = 1500L
+
+        val DIFICULDADES = listOf("Fácil", "Médio", "Difícil")
+
+        /** Pontos ganhos por acerto em cada nível. */
+        fun pontosPorAcerto(dificuldade: String): Int = when (dificuldade) {
+            "Médio" -> 150
+            "Difícil" -> 200
+            else -> 100
+        }
+    }
+
     private val _uiState = MutableStateFlow(JogoUiState())
     val uiState: StateFlow<JogoUiState> = _uiState.asStateFlow()
 
-    private var nomeJogador: String = "Jogador"
+    /** Todos os itens do banco, sempre atualizados pelo Flow do Room. */
+    private var todosItens: List<ItemQuizEntity> = emptyList()
+
+    /** Job do avanço automático, para poder cancelar se o jogador sair. */
+    private var avancoAutomatico: Job? = null
+
     private var resultadoSalvo = false
 
     init {
-        carregarCategorias()
+        observarCategorias()
     }
 
-    private fun carregarCategorias() {
+    // ------------------------------------------------------------------
+    // Tela de início
+    // ------------------------------------------------------------------
+
+    /**
+     * Coleta o Flow do Room: sempre que um item é inserido/removido
+     * (pela sincronização ou pelo Admin), os cards de categoria se atualizam sozinhos.
+     */
+    private fun observarCategorias() {
         viewModelScope.launch {
             quizRepository.buscarTodos().collect { itens ->
-                val categorias = itens
-                    .map { it.categoria }
-                    .distinct()
-                    .sorted()
+                todosItens = itens
 
-                _uiState.update {
-                    val categoriaPadrao = if (it.categoriaSelecionada.isBlank() && categorias.isNotEmpty()) {
-                        categorias.first()
-                    } else {
-                        it.categoriaSelecionada
+                val categorias = itens
+                    .groupBy { it.categoria }
+                    .map { (nome, itensDaCategoria) ->
+                        CategoriaResumo(
+                            nome = nome,
+                            quantidadeItens = itensDaCategoria.size,
+                            imagemCapaUrl = itensDaCategoria.firstOrNull()?.imagemUrl
+                        )
                     }
-                    it.copy(
+                    .sortedBy { it.nome }
+
+                _uiState.update { estado ->
+                    val selecionadaAindaExiste = categorias.any { it.nome == estado.categoriaSelecionada }
+                    estado.copy(
                         categorias = categorias,
-                        categoriaSelecionada = categoriaPadrao
+                        categoriaSelecionada = if (selecionadaAindaExiste) {
+                            estado.categoriaSelecionada
+                        } else {
+                            categorias.firstOrNull()?.nome.orEmpty()
+                        }
                     )
                 }
             }
         }
     }
 
-    fun selecionarCategoria(categoria: String) {
-        _uiState.update {
-            it.copy(categoriaSelecionada = categoria)
+    /** Preenche o apelido vindo do login, sem sobrescrever o que o jogador já digitou. */
+    fun definirApelidoInicial(apelido: String) {
+        if (_uiState.value.apelido.isBlank() && apelido.isNotBlank()) {
+            _uiState.update { it.copy(apelido = apelido) }
         }
+    }
+
+    fun alterarApelido(apelido: String) {
+        _uiState.update { it.copy(apelido = apelido, mensagemErro = null) }
+    }
+
+    fun selecionarCategoria(categoria: String) {
+        _uiState.update { it.copy(categoriaSelecionada = categoria, mensagemErro = null) }
     }
 
     fun selecionarDificuldade(dificuldade: String) {
-        _uiState.update {
-            it.copy(dificuldadeSelecionada = dificuldade)
+        _uiState.update { it.copy(dificuldadeSelecionada = dificuldade, mensagemErro = null) }
+    }
+
+    /**
+     * Atalho para quando o banco está vazio: baixa as bandeiras pela API
+     * (mesma função do Repository que o painel Admin usa).
+     */
+    fun sincronizarBandeiras() {
+        if (_uiState.value.sincronizando) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(sincronizando = true, mensagemErro = null) }
+
+            val resultado = quizRepository.sincronizarBandeirasDaApi()
+
+            _uiState.update {
+                it.copy(
+                    sincronizando = false,
+                    mensagemErro = if (resultado.isFailure) {
+                        "Não foi possível baixar as bandeiras. Verifique a internet."
+                    } else {
+                        null
+                    }
+                )
+            }
         }
     }
 
-    fun sairDaPartida() {
-        _uiState.update {
-            it.copy(
-                partidaIniciada = false,
-                partidaFinalizada = false
-            )
-        }
-    }
+    // ------------------------------------------------------------------
+    // Início da partida
+    // ------------------------------------------------------------------
 
-    fun iniciarPartida(
-        categoria: String,
-        dificuldade: String,
-        jogador: String
-    ) {
+    /**
+     * @param navegar true quando chamado pela tela inicial (precisa abrir o quiz);
+     * false no "Jogar novamente", que já está na tela do quiz.
+     */
+    fun iniciarPartida(navegar: Boolean = true) {
+        val estado = _uiState.value
+        val apelido = estado.apelido.trim()
+        val categoria = estado.categoriaSelecionada
+        val dificuldade = estado.dificuldadeSelecionada
+
+        if (apelido.isBlank()) {
+            _uiState.update { it.copy(mensagemErro = "Digite seu apelido para jogar.") }
+            return
+        }
         if (categoria.isBlank()) return
 
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    carregando = true,
-                    mensagemErro = null,
-                    partidaIniciada = false,
-                    partidaFinalizada = false
-                )
-            }
+            _uiState.update { it.copy(carregando = true, mensagemErro = null) }
 
             try {
-                val todosItens = quizRepository.buscarTodos().first()
+                // Garante a lista mais recente do banco antes de sortear
+                val itens = quizRepository.buscarTodos().first()
+                todosItens = itens
 
-                val perguntasDisponiveis = todosItens
-                    .filter {
-                        it.categoria == categoria &&
-                                it.dificuldade.equals(dificuldade, ignoreCase = true)
-                    }
+                val itensDaCategoria = itens.filter { it.categoria == categoria }
+
+                // Perguntas: só do nível escolhido, embaralhadas e sem repetição
+                val perguntas = itensDaCategoria
+                    .filter { it.dificuldade.equals(dificuldade, ignoreCase = true) }
+                    .distinctBy { it.id }
                     .shuffled()
+                    .take(TOTAL_RODADAS)
 
-                if (perguntasDisponiveis.size < 4) {
+                if (perguntas.isEmpty() || itensDaCategoria.size < ALTERNATIVAS_POR_PERGUNTA) {
                     _uiState.update {
                         it.copy(
                             carregando = false,
-                            mensagemErro = "São necessários pelo menos 4 itens nessa categoria e dificuldade."
+                            mensagemErro = "Ainda não há itens suficientes em $categoria · $dificuldade."
                         )
                     }
                     return@launch
                 }
 
-                nomeJogador = jogador.ifBlank { "Jogador" }
                 resultadoSalvo = false
+                avancoAutomatico?.cancel()
 
-                val primeiraPergunta = perguntasDisponiveis.first()
-
-                val alternativas = criarAlternativas(
-                    primeiraPergunta,
-                    perguntasDisponiveis
-                )
+                val primeira = perguntas.first()
 
                 _uiState.update {
-                    JogoUiState(
-                        categorias = it.categorias,
-                        categoriaSelecionada = categoria,
-                        dificuldadeSelecionada = dificuldade,
-                        perguntas = perguntasDisponiveis,
+                    it.copy(
+                        apelido = apelido,
+                        perguntas = perguntas,
                         indicePerguntaAtual = 0,
-                        perguntaAtual = primeiraPergunta,
-                        alternativas = alternativas,
-                        vidasRestantes = 3,
+                        perguntaAtual = primeira,
+                        alternativas = criarAlternativas(primeira, itensDaCategoria),
+                        vidasRestantes = VIDAS_INICIAIS,
                         pontuacao = 0,
                         acertos = 0,
                         perguntasRespondidas = 0,
+                        respostaSelecionada = null,
+                        respostaCorreta = null,
+                        pontosUltimaResposta = 0,
+                        dicaVisivel = false,
                         carregando = false,
                         partidaIniciada = true,
-                        partidaFinalizada = false
+                        partidaFinalizada = false,
+                        navegarParaQuiz = navegar,
+                        mensagemErro = null
                     )
                 }
-
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(
-                        carregando = false,
-                        mensagemErro = "Erro ao carregar perguntas: ${e.message}"
-                    )
+                    it.copy(carregando = false, mensagemErro = "Erro ao carregar perguntas: ${e.message}")
                 }
             }
         }
     }
 
-    private fun criarAlternativas(
-        perguntaCorreta: ItemQuizEntity,
-        perguntasDisponiveis: List<ItemQuizEntity>
-    ): List<ItemQuizEntity> {
-
-        val alternativasErradas = perguntasDisponiveis
-            .filter { it.id != perguntaCorreta.id }
-            .shuffled()
-            .take(3)
-            .map { it }
-
-        return (listOf(perguntaCorreta) + alternativasErradas).shuffled()
+    /** A tela avisa que já navegou, para não navegar de novo ao voltar. */
+    fun navegacaoRealizada() {
+        _uiState.update { it.copy(navegarParaQuiz = false) }
     }
+
+    /**
+     * Sorteia 1 resposta certa + 3 erradas da MESMA categoria.
+     * As erradas podem ser de qualquer nível, o que deixa as opções mais variadas.
+     */
+    private fun criarAlternativas(
+        correta: ItemQuizEntity,
+        itensDaCategoria: List<ItemQuizEntity>
+    ): List<ItemQuizEntity> {
+        val erradas = itensDaCategoria
+            .filter { it.id != correta.id && it.nomeCorreto != correta.nomeCorreto }
+            .distinctBy { it.nomeCorreto }
+            .shuffled()
+            .take(ALTERNATIVAS_POR_PERGUNTA - 1)
+
+        return (erradas + correta).shuffled()
+    }
+
+    // ------------------------------------------------------------------
+    // Durante a partida
+    // ------------------------------------------------------------------
 
     fun responder(alternativa: ItemQuizEntity) {
         val estado = _uiState.value
-        val perguntaAtual = estado.perguntaAtual ?: return
+        val pergunta = estado.perguntaAtual ?: return
 
-        if (!estado.partidaIniciada ||
-            estado.partidaFinalizada ||
-            estado.respostaCorreta != null ||
-            estado.alternativas.none { it.id == alternativa.id }
-        ) return
+        // Ignora toques repetidos ou fora de partida
+        if (!estado.partidaIniciada || estado.respondida) return
 
-        val acertou = alternativa.id == perguntaAtual.id
-
-        val pontosGanhos = if (acertou) {
-            when (estado.dificuldadeSelecionada) {
-                "Fácil" -> 10
-                "Médio" -> 20
-                "Difícil" -> 30
-                else -> 10
-            }
-        } else {
-            0
-        }
+        val acertou = alternativa.id == pergunta.id
+        val pontos = if (acertou) pontosPorAcerto(estado.dificuldadeSelecionada) else 0
 
         _uiState.update {
             it.copy(
-                respostaSelecionada = alternativa.nomeCorreto,
+                respostaSelecionada = alternativa,
                 respostaCorreta = acertou,
-                pontuacao = it.pontuacao + pontosGanhos,
+                pontosUltimaResposta = pontos,
+                pontuacao = it.pontuacao + pontos,
                 acertos = if (acertou) it.acertos + 1 else it.acertos,
-                vidasRestantes = if (acertou) {
-                    it.vidasRestantes
-                } else {
-                    it.vidasRestantes - 1
-                },
+                vidasRestantes = if (acertou) it.vidasRestantes else it.vidasRestantes - 1,
                 perguntasRespondidas = it.perguntasRespondidas + 1
             )
+        }
+
+        // Mostra o feedback (verde/vermelho) por um instante e avança sozinho
+        avancoAutomatico?.cancel()
+        avancoAutomatico = viewModelScope.launch {
+            delay(TEMPO_FEEDBACK_MS)
+            avancarPergunta()
         }
     }
 
     fun mostrarDica() {
         val estado = _uiState.value
-
-        if (!estado.partidaIniciada ||
-            estado.partidaFinalizada ||
-            estado.respostaCorreta != null
-        ) return
-
-        _uiState.update {
-            it.copy(dicaVisivel = true)
-        }
+        if (!estado.partidaIniciada || estado.respondida) return
+        _uiState.update { it.copy(dicaVisivel = true) }
     }
 
-    fun avancarPergunta() {
+    private fun avancarPergunta() {
         val estado = _uiState.value
-
-        if (!estado.partidaIniciada ||
-            estado.partidaFinalizada ||
-            estado.respostaCorreta == null
-        ) return
+        if (!estado.partidaIniciada || !estado.respondida) return
 
         val proximoIndice = estado.indicePerguntaAtual + 1
 
-        if (estado.vidasRestantes <= 0 ||
-            proximoIndice >= estado.perguntas.size
-        ) {
+        // Fim de jogo: acabaram as vidas ou as rodadas
+        if (estado.vidasRestantes <= 0 || proximoIndice >= estado.perguntas.size) {
             finalizarPartida()
             return
         }
 
-        val proximaPergunta = estado.perguntas[proximoIndice]
-
-        val alternativas = criarAlternativas(
-            proximaPergunta,
-            estado.perguntas
-        )
+        val proxima = estado.perguntas[proximoIndice]
+        val itensDaCategoria = todosItens.filter { it.categoria == estado.categoriaSelecionada }
 
         _uiState.update {
             it.copy(
                 indicePerguntaAtual = proximoIndice,
-                perguntaAtual = proximaPergunta,
-                alternativas = alternativas,
+                perguntaAtual = proxima,
+                alternativas = criarAlternativas(proxima, itensDaCategoria),
                 respostaSelecionada = null,
                 respostaCorreta = null,
+                pontosUltimaResposta = 0,
                 dicaVisivel = false
             )
         }
     }
 
+    /** Salva o placar no Room (via PlacarRepository) uma única vez por partida. */
     private fun finalizarPartida() {
         if (resultadoSalvo) return
-
         resultadoSalvo = true
 
         viewModelScope.launch {
-            try {
-                val estado = _uiState.value
+            val estado = _uiState.value
 
-                val placar = PlacarEntity(
-                    nomeJogador = nomeJogador,
-                    categoriaJogada = estado.categoriaSelecionada,
-                    pontuacao = estado.pontuacao,
-                    acertos = estado.acertos,
-                    dificuldade = estado.dificuldadeSelecionada,
-                    dataHora = System.currentTimeMillis()
+            val placar = PlacarEntity(
+                nomeJogador = estado.apelido.ifBlank { "Jogador" },
+                categoriaJogada = estado.categoriaSelecionada,
+                pontuacao = estado.pontuacao,
+                acertos = estado.acertos,
+                dificuldade = estado.dificuldadeSelecionada,
+                dataHora = System.currentTimeMillis()
+            )
+
+            val resultado = placarRepository.inserir(placar)
+
+            _uiState.update {
+                it.copy(
+                    partidaIniciada = false,
+                    partidaFinalizada = true,
+                    mensagemErro = if (resultado.isFailure) "Não foi possível salvar o resultado." else null
                 )
-
-                val resultado = placarRepository.inserir(placar)
-
-                _uiState.update {
-                    it.copy(
-                        partidaFinalizada = true,
-                        partidaIniciada = false,
-                        mensagemErro = if (resultado.isFailure) {
-                            "Não foi possível salvar o resultado."
-                        } else {
-                            null
-                        }
-                    )
-                }
-
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        partidaFinalizada = true,
-                        partidaIniciada = false,
-                        mensagemErro = "Ocorreu um erro ao salvar o resultado."
-                    )
-                }
             }
         }
+    }
+
+    /** Volta para a tela inicial (botão voltar ou "Voltar ao início"). */
+    fun sairDaPartida() {
+        avancoAutomatico?.cancel()
+        _uiState.update {
+            it.copy(
+                partidaIniciada = false,
+                partidaFinalizada = false,
+                navegarParaQuiz = false,
+                perguntas = emptyList(),
+                perguntaAtual = null,
+                alternativas = emptyList(),
+                respostaSelecionada = null,
+                respostaCorreta = null,
+                dicaVisivel = false,
+                mensagemErro = null
+            )
+        }
+    }
+
+    /** "Jogar novamente": mesma categoria, nível e apelido. */
+    fun jogarNovamente() {
+        sairDaPartida()
+        iniciarPartida(navegar = false)
     }
 }

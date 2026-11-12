@@ -1,6 +1,11 @@
 package com.example.qualimagem.ui.jogo
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,20 +13,40 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.HeartBroken
+import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.qualimagem.data.ItemQuizEntity
+import com.example.qualimagem.viewmodel.JogoUiState
 import com.example.qualimagem.viewmodel.JogoViewModel
 
+/**
+ * Tela da partida. Decide entre 3 conteúdos a partir do JogoUiState:
+ * carregando, rodada em andamento ou resumo de fim de jogo.
+ */
 @Composable
 fun JogoQuizScreen(
     viewModel: JogoViewModel,
@@ -29,149 +54,223 @@ fun JogoQuizScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    val sair = {
+        viewModel.sairDaPartida()
+        onVoltarInicio()
+    }
+
+    // Botão "voltar" do sistema também encerra a partida corretamente
+    BackHandler(onBack = sair)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CoresJogo.Fundo)
+    ) {
+        val pergunta = uiState.perguntaAtual
+        when {
+            uiState.partidaFinalizada -> FimDeJogoConteudo(
+                uiState = uiState,
+                onJogarNovamente = viewModel::jogarNovamente,
+                onVoltarInicio = sair
+            )
+
+            pergunta != null -> RodadaConteudo(
+                uiState = uiState,
+                pergunta = pergunta,
+                onResponder = viewModel::responder,
+                onMostrarDica = viewModel::mostrarDica,
+                onVoltar = sair
+            )
+
+            else -> CircularProgressIndicator(
+                color = CoresJogo.Primaria,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+    }
+}
+
+@Composable
+private fun RodadaConteudo(
+    uiState: JogoUiState,
+    pergunta: ItemQuizEntity,
+    onResponder: (ItemQuizEntity) -> Unit,
+    onMostrarDica: () -> Unit,
+    onVoltar: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        if (uiState.partidaFinalizada) {
-            Text(
-                text = "Fim de jogo!",
-                style = MaterialTheme.typography.headlineLarge
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text("Resultado da partida")
-            Text("Pontuação: ${uiState.pontuacao}")
-            Text("Acertos: ${uiState.acertos}")
-            Text("Perguntas respondidas: ${uiState.perguntasRespondidas}")
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    viewModel.sairDaPartida()
-                    onVoltarInicio()
-                }
-            ) {
-                Text("Voltar ao início")
+        // ---- Topo: voltar, rodada e vidas ----
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onVoltar) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Sair da partida", tint = CoresJogo.Texto)
             }
+            Text(
+                "Rodada ${uiState.rodadaAtual}/${uiState.totalRodadas}",
+                color = CoresJogo.Texto,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
+            IndicadorVidas(
+                vidasRestantes = uiState.vidasRestantes,
+                vidasTotais = JogoViewModel.VIDAS_INICIAIS
+            )
+        }
 
+        // ---- Progresso e pontos ----
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+            BarraProgressoRodadas(progresso = uiState.progresso, modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(14.dp))
+            Icon(Icons.Rounded.Bolt, contentDescription = null, tint = CoresJogo.Primaria, modifier = Modifier.size(18.dp))
+            Text("${uiState.pontuacao} pts", color = CoresJogo.Primaria, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // ---- Pergunta ----
+        Text(
+            "${uiState.categoriaSelecionada} · ${uiState.dificuldadeSelecionada}".uppercase(),
+            color = CoresJogo.Primaria,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 1.sp
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            textoPergunta(uiState.categoriaSelecionada),
+            color = CoresJogo.Texto,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 30.sp
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        // ---- Imagem (Coil carrega a URL salva no Room) ----
+        CaixaDestaque {
+            AsyncImage(
+                model = pergunta.imagemUrl,
+                contentDescription = "Imagem da rodada",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // ---- Dica ----
+        if (uiState.dicaVisivel) {
+            CaixaDestaque(fundo = CoresJogo.DicaFundo, borda = CoresJogo.Dica.copy(alpha = 0.5f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Lightbulb, contentDescription = null, tint = CoresJogo.Dica)
+                    Spacer(Modifier.width(10.dp))
+                    Text(pergunta.dica, color = CoresJogo.Texto, fontWeight = FontWeight.Medium)
+                }
+            }
         } else {
-            Text(
-                text = "Qual-Imagem",
-                style = MaterialTheme.typography.headlineMedium
+            BotaoVerDica(
+                habilitado = !uiState.respondida,
+                onClick = onMostrarDica,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Vidas: ${uiState.vidasRestantes}")
-                Text("Pontos: ${uiState.pontuacao}")
-                Text("Acertos: ${uiState.acertos}")
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            val pergunta = uiState.perguntaAtual
-
-            if (pergunta != null) {
-                Text(
-                    text = "Qual é o nome desta imagem?",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                AsyncImage(
-                    model = pergunta.imagemUrl,
-                    contentDescription = "Imagem para identificação",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                uiState.alternativas.forEach { alternativa ->
-                    val textoBotao = alternativa.nomeCorreto
-
-                    val respostaEscolhida =
-                        uiState.respostaSelecionada == textoBotao
-
-                    val textoAlternativa = when {
-                        uiState.respostaCorreta == null -> textoBotao
-                        respostaEscolhida && uiState.respostaCorreta == true ->
-                            "$textoBotao - Correto!"
-                        respostaEscolhida && uiState.respostaCorreta == false ->
-                            "$textoBotao - Incorreto!"
-                        else -> textoBotao
-                    }
-
-                    OutlinedButton(
-                        onClick = { viewModel.responder(alternativa) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = uiState.respostaCorreta == null
-                    ) {
-                        Text(textoAlternativa)
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                if (uiState.dicaVisivel) {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Dica: ${pergunta.dica}",
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                }
-
-                Text(
-                    text = "Pergunta ${uiState.indicePerguntaAtual + 1} de ${uiState.perguntas.size}"
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    OutlinedButton(
-                        onClick = { viewModel.mostrarDica() },
-                        enabled = !uiState.dicaVisivel &&
-                                uiState.respostaCorreta == null
-                    ) {
-                        Text("Ver dica")
-                    }
-
-                    Button(
-                        onClick = { viewModel.avancarPergunta() },
-                        enabled = uiState.respostaCorreta != null
-                    ) {
-                        Text("Próxima")
-                    }
-                }
-
-            } else {
-                Text("Carregando pergunta...")
-            }
-
-            uiState.mensagemErro?.let { mensagem ->
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = mensagem,
-                    color = MaterialTheme.colorScheme.error
+        // ---- Alternativas A, B, C, D ----
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            uiState.alternativas.forEachIndexed { indice, alternativa ->
+                CardAlternativa(
+                    letra = 'A' + indice,
+                    texto = alternativa.nomeCorreto,
+                    estado = estadoDaAlternativa(uiState, pergunta, alternativa),
+                    onClick = { onResponder(alternativa) }
                 )
             }
         }
+
+        Spacer(Modifier.height(12.dp))
+
+        // ---- Feedback da resposta ----
+        when (uiState.respostaCorreta) {
+            true -> Feedback(
+                texto = "Boa! Resposta correta. +${uiState.pontosUltimaResposta} pts",
+                acerto = true
+            )
+            false -> Feedback(
+                texto = "Era ${pergunta.nomeCorreto}. Você perdeu uma vida.",
+                acerto = false
+            )
+            null -> Unit
+        }
+    }
+}
+
+/**
+ * Regra de cor das alternativas:
+ * antes de responder todas ficam neutras; depois, a certa fica verde,
+ * a escolhida errada fica vermelha e as outras ficam apagadas.
+ */
+private fun estadoDaAlternativa(
+    uiState: JogoUiState,
+    pergunta: ItemQuizEntity,
+    alternativa: ItemQuizEntity
+): EstadoAlternativa = when {
+    !uiState.respondida -> EstadoAlternativa.NEUTRA
+    alternativa.id == pergunta.id -> EstadoAlternativa.CORRETA
+    alternativa.id == uiState.respostaSelecionada?.id -> EstadoAlternativa.ERRADA
+    else -> EstadoAlternativa.DESATIVADA
+}
+
+/** Texto da pergunta muda conforme a categoria (o jogo aceita várias categorias). */
+private fun textoPergunta(categoria: String): String =
+    if (categoria.equals("Bandeiras", ignoreCase = true)) {
+        "De qual país é\nesta bandeira?"
+    } else {
+        "Qual é o nome\ndesta imagem?"
+    }
+
+@Composable
+private fun BotaoVerDica(habilitado: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val cor = if (habilitado) CoresJogo.Dica else CoresJogo.TextoApagado
+    Row(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(CoresJogo.DicaFundo)
+            .border(1.dp, cor, CircleShape)
+            .clickable(enabled = habilitado, onClick = onClick)
+            .padding(horizontal = 18.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Outlined.Lightbulb, contentDescription = null, tint = cor, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(6.dp))
+        Text("Ver Dica", color = cor, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+    }
+}
+
+@Composable
+private fun Feedback(texto: String, acerto: Boolean) {
+    val cor = if (acerto) CoresJogo.Acerto else CoresJogo.Erro
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            if (acerto) Icons.Outlined.AutoAwesome else Icons.Outlined.HeartBroken,
+            contentDescription = null,
+            tint = cor,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(texto, color = cor, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
     }
 }
