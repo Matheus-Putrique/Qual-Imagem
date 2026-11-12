@@ -1,237 +1,160 @@
 package com.example.qualimagem.ui
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.CropFree
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.qualimagem.ui.components.BotaoPrincipal
-import com.example.qualimagem.ui.components.CardPadrao
 import com.example.qualimagem.viewmodel.SessaoViewModel
 
+/**
+ * Tela de entrada: só dois botões, sem usuário/senha.
+ * Um botão entra como Jogador e o outro como Administrador.
+ */
 @Composable
 fun LoginScreen(
     viewModel: SessaoViewModel,
-    onLoginSucesso: (isAdmin: Boolean) -> Unit
+    onEntrar: (isAdmin: Boolean) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    var abaSelecionada by remember { mutableIntStateOf(0) }
-    var nickname by remember { mutableStateOf("") }
-    var usuarioAdmin by remember { mutableStateOf("") }
-    var senhaAdmin by remember { mutableStateOf("") }
-    var senhaVisivel by remember { mutableStateOf(false) }
-
-    LaunchedEffect(uiState.usuarioLogado) {
-        if (uiState.usuarioLogado) {
-            onLoginSucesso(uiState.isAdmin)
-        }
+    // Sempre que esta tela aparece (inclusive ao voltar para ela), a sessão é zerada
+    LaunchedEffect(Unit) {
+        viewModel.logout()
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 24.dp, vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.SportsEsports,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
+        Spacer(Modifier.weight(1f))
 
-        Spacer(modifier = Modifier.height(12.dp))
+        IlustracaoLogo()
+
+        Spacer(Modifier.height(40.dp))
 
         Text(
             text = "Qual é a Imagem?",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold
         )
-
+        Spacer(Modifier.height(16.dp))
         Text(
-            text = "Teste seus conhecimentos em bandeiras e muito mais",
-            style = MaterialTheme.typography.bodyMedium,
+            text = "Um mundo de imagens.\nQuantas você conhece?",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 15.sp,
+            lineHeight = 22.sp,
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(Modifier.weight(1f))
 
-        TabRow(
-            selectedTabIndex = abaSelecionada,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Tab(
-                selected = abaSelecionada == 0,
-                onClick = {
-                    abaSelecionada = 0
-                    viewModel.limparErro()
-                },
-                text = { Text("Jogador") },
-                icon = { Icon(Icons.Default.Person, contentDescription = null) }
-            )
-            Tab(
-                selected = abaSelecionada == 1,
-                onClick = {
-                    abaSelecionada = 1
-                    viewModel.limparErro()
-                },
-                text = { Text("Administrador") },
-                icon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = null) }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        CardPadrao {
-            Column(modifier = Modifier.padding(20.dp)) {
-                if (abaSelecionada == 0) {
-                    Text(
-                        text = "Entrar como Jogador",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Escolha seu apelido para registrar sua pontuação no ranking.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
-                        value = nickname,
-                        onValueChange = {
-                            nickname = it
-                            viewModel.limparErro()
-                        },
-                        label = { Text("Apelido / Nickname") },
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    BotaoPrincipal(
-                        texto = "Entrar no Jogo",
-                        onClick = { viewModel.loginJogador(nickname) },
-                        habilitado = nickname.isNotBlank()
-                    )
-
-                } else {
-                    Text(
-                        text = "Painel Administrativo",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Acesso restrito para sincronização de API e gerenciamento.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
-                        value = usuarioAdmin,
-                        onValueChange = {
-                            usuarioAdmin = it
-                            viewModel.limparErro()
-                        },
-                        label = { Text("Usuário") },
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = senhaAdmin,
-                        onValueChange = {
-                            senhaAdmin = it
-                            viewModel.limparErro()
-                        },
-                        label = { Text("Senha") },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                        trailingIcon = {
-                            IconButton(onClick = { senhaVisivel = !senhaVisivel }) {
-                                Icon(
-                                    imageVector = if (senhaVisivel) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                    contentDescription = if (senhaVisivel) "Ocultar senha" else "Mostrar senha"
-                                )
-                            }
-                        },
-                        visualTransformation = if (senhaVisivel) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    BotaoPrincipal(
-                        texto = "Entrar como Administrador",
-                        onClick = { viewModel.loginAdmin(usuarioAdmin, senhaAdmin) },
-                        habilitado = usuarioAdmin.isNotBlank() && senhaAdmin.isNotBlank()
-                    )
-                }
-
-                uiState.mensagemErro?.let { erro ->
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = erro,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+        BotaoPrincipal(
+            texto = "Entrar como Usuário",
+            icone = Icons.Outlined.Person,
+            onClick = {
+                viewModel.entrarComoJogador()
+                onEntrar(false)
             }
+        )
+        Spacer(Modifier.height(14.dp))
+        BotaoPrincipal(
+            texto = "Entrar como Administrador",
+            icone = Icons.Outlined.Shield,
+            secundario = true,
+            onClick = {
+                viewModel.entrarComoAdmin()
+                onEntrar(true)
+            }
+        )
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Ícone central do Figma: quadro de "scan" com um olho, e duas bandeiras inclinadas atrás. */
+@Composable
+private fun IlustracaoLogo() {
+    val cores = MaterialTheme.colorScheme
+    Box(modifier = Modifier.size(width = 200.dp, height = 150.dp), contentAlignment = Alignment.Center) {
+        // Bandeira listrada (azul/branco/vermelho) à esquerda
+        BandeiraDesenhada(
+            modifier = Modifier
+                .offset(x = (-52).dp, y = 30.dp)
+                .rotate(-10f)
+        ) { tamanho ->
+            val faixa = tamanho.width / 3
+            drawRect(Color(0xFF1E3A8A), size = Size(faixa, tamanho.height))
+            drawRect(Color.White, topLeft = Offset(faixa, 0f), size = Size(faixa, tamanho.height))
+            drawRect(Color(0xFFDC2626), topLeft = Offset(faixa * 2, 0f), size = Size(faixa, tamanho.height))
+        }
+        // Bandeira com círculo vermelho à direita
+        BandeiraDesenhada(
+            modifier = Modifier
+                .offset(x = 52.dp, y = 38.dp)
+                .rotate(8f)
+        ) { tamanho ->
+            drawRect(Color.White, size = tamanho)
+            drawCircle(Color(0xFFBC002D), radius = tamanho.height * 0.3f)
+        }
+        // Quadro central
+        Box(
+            modifier = Modifier
+                .size(108.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .background(cores.primaryContainer)
+                .border(1.5.dp, cores.primary, RoundedCornerShape(28.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Outlined.CropFree, contentDescription = null, tint = cores.primary, modifier = Modifier.size(56.dp))
+            Icon(Icons.Outlined.Visibility, contentDescription = null, tint = cores.primary, modifier = Modifier.size(26.dp))
         }
     }
 }
 
+@Composable
+private fun BandeiraDesenhada(
+    modifier: Modifier,
+    desenho: androidx.compose.ui.graphics.drawscope.DrawScope.(Size) -> Unit
+) {
+    Canvas(
+        modifier = modifier
+            .size(width = 64.dp, height = 44.dp)
+            .clip(RoundedCornerShape(4.dp))
+    ) {
+        desenho(size)
+    }
+}

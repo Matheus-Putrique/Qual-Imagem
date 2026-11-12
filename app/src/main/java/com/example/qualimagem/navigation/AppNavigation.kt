@@ -1,7 +1,13 @@
 package com.example.qualimagem.navigation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.EditNote
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -65,13 +71,15 @@ fun AppNavigation() {
     val rotaAtual = navBackStackEntry?.destination?.route
     val deveExibirBottomBar = rotaAtual in listOf(
         Rotas.INICIO_JOGO,
-        Rotas.RANKING,
         Rotas.GALERIA,
+        Rotas.DETALHE,
+        Rotas.RANKING,
         Rotas.ADMIN_DASHBOARD
     )
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (deveExibirBottomBar) {
                 BottomNavBar(
@@ -86,18 +94,13 @@ fun AppNavigation() {
             startDestination = Rotas.LOGIN,
             modifier = Modifier.padding(paddingValores)
         ) {
+            // A tela de entrada continua na pilha: voltar das abas iniciais retorna a ela (trocar de perfil)
             composable(Rotas.LOGIN) {
                 LoginScreen(
                     viewModel = sessaoViewModel,
-                    onLoginSucesso = { isAdmin ->
-                        if (isAdmin) {
-                            navController.navigate(Rotas.ADMIN_DASHBOARD) {
-                                popUpTo(Rotas.LOGIN) { inclusive = true }
-                            }
-                        } else {
-                            navController.navigate(Rotas.INICIO_JOGO) {
-                                popUpTo(Rotas.LOGIN) { inclusive = true }
-                            }
+                    onEntrar = { isAdmin ->
+                        navController.navigate(if (isAdmin) Rotas.ADMIN_DASHBOARD else Rotas.INICIO_JOGO) {
+                            launchSingleTop = true
                         }
                     }
                 )
@@ -106,7 +109,6 @@ fun AppNavigation() {
             composable(Rotas.INICIO_JOGO) {
                 InicioJogoScreen(
                     viewModel = jogoViewModel,
-                    apelidoInicial = sessaoUiState.nickname,
                     onIniciarJogo = {
                         navController.navigate(Rotas.QUIZ)
                     }
@@ -155,49 +157,57 @@ fun AppNavigation() {
                 )
             }
 
+            // ---- Área do Admin: só renderiza se a sessão for de administrador ----
             composable(Rotas.ADMIN_DASHBOARD) {
                 if (sessaoUiState.isAdmin) {
-                    Scaffold(
-                        topBar = { BarraTopo(titulo = "Painel do Administrador") }
-                    ) { p ->
+                    Column {
+                        BarraTopo(titulo = "Painel Admin")
                         EstadoVazio(
                             mensagem = "Área Administrativa",
-                            subtitulo = "Módulo reservado para integração das telas da Pessoa 6 (AdminDashboardScreen e AdminFormularioScreen).",
-                            modifier = Modifier.padding(p)
+                            subtitulo = "Reservado para a AdminDashboardScreen (Pessoa 6).",
+                            icone = Icons.Outlined.Shield
                         )
                     }
                 } else {
-                    EstadoVazio(
-                        mensagem = "Acesso Negado",
-                        subtitulo = "Faça login com perfil de Administrador para acessar esta área."
-                    )
+                    AcessoNegado()
                 }
             }
 
-            composable(Rotas.ADMIN_FORMULARIO) {
+            composable(
+                route = Rotas.ADMIN_FORMULARIO,
+                arguments = listOf(
+                    navArgument("id") {
+                        type = NavType.IntType
+                        defaultValue = Rotas.SEM_ID
+                    }
+                )
+            ) { backStackEntry ->
+                val itemId = backStackEntry.arguments?.getInt("id") ?: Rotas.SEM_ID
                 if (sessaoUiState.isAdmin) {
-                    Scaffold(
-                        topBar = {
-                            BarraTopo(
-                                titulo = "Formulário de Itens",
-                                onVoltar = { navController.popBackStack() }
-                            )
-                        }
-                    ) { p ->
+                    Column {
+                        BarraTopo(
+                            titulo = if (itemId == Rotas.SEM_ID) "Novo item" else "Editar item",
+                            onVoltar = { navController.popBackStack() }
+                        )
                         EstadoVazio(
                             mensagem = "Cadastro / Edição de Itens",
-                            subtitulo = "Módulo reservado para integração da tela da Pessoa 6 (AdminFormularioScreen).",
-                            modifier = Modifier.padding(p)
+                            subtitulo = "Reservado para a AdminFormularioScreen (Pessoa 6). Id recebido: $itemId",
+                            icone = Icons.Outlined.EditNote
                         )
                     }
                 } else {
-                    EstadoVazio(
-                        mensagem = "Acesso Negado",
-                        subtitulo = "Faça login com perfil de Administrador para acessar esta área."
-                    )
+                    AcessoNegado()
                 }
             }
         }
     }
 }
 
+@Composable
+private fun AcessoNegado() {
+    EstadoVazio(
+        mensagem = "Acesso Negado",
+        subtitulo = "Entre como Administrador para acessar esta área.",
+        icone = Icons.Outlined.Lock
+    )
+}

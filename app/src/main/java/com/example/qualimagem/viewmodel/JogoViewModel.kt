@@ -95,13 +95,6 @@ class JogoViewModel(
         }
     }
 
-    /** Preenche o apelido vindo do login, sem sobrescrever o que o jogador já digitou. */
-    fun definirApelidoInicial(apelido: String) {
-        if (_uiState.value.apelido.isBlank() && apelido.isNotBlank()) {
-            _uiState.update { it.copy(apelido = apelido) }
-        }
-    }
-
     fun alterarApelido(apelido: String) {
         _uiState.update { it.copy(apelido = apelido, mensagemErro = null) }
     }

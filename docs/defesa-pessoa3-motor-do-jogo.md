@@ -22,7 +22,7 @@ Escopo da parte 3, conforme o card do grupo:
 | `ui/jogo/ComponentesJogo.kt` | Componentes | Peças visuais reaproveitadas: botão pílula, chip, campo de texto, card de categoria, card de alternativa, corações, barra de progresso. |
 | `ui/jogo/CoresJogo.kt` | Visual | Paleta de cores tirada do Figma (azul-marinho, ciano, verde de acerto, vermelho de erro, âmbar de dica). |
 
-Fora da pasta da parte 3, só uma linha mudou em `navigation/AppNavigation.kt`: a tela inicial agora recebe `apelidoInicial = sessaoUiState.nickname`, para reaproveitar o apelido digitado no login.
+Nenhum arquivo fora da parte 3 precisa ser alterado. Como a tela de entrada do app (Pessoa 5) agora é só dois botões, sem apelido, o apelido é pedido **só aqui**, no campo "Seu apelido".
 
 ---
 
@@ -297,7 +297,6 @@ Vantagem: o ViewModel sobrevive à rotação de tela e pode ser testado com repo
 | Parte da tela | Código | Explicação |
 |---|---|---|
 | Ler estado | `val uiState by viewModel.uiState.collectAsState()` | Converte o `StateFlow` em estado do Compose: mudou, redesenha. |
-| Apelido do login | `LaunchedEffect(apelidoInicial) { viewModel.definirApelidoInicial(apelidoInicial) }` | Preenche o campo com o apelido do login, sem apagar o que o jogador já digitou. |
 | Navegar | `LaunchedEffect(uiState.navegarParaQuiz) { if (...) { viewModel.navegacaoRealizada(); onIniciarJogo() } }` | Evento único (ver 4.10). |
 | Banner | `"${JogoViewModel.TOTAL_RODADAS} rodadas · ${JogoViewModel.VIDAS_INICIAIS} vidas"` | O texto vem das constantes da regra. |
 | Apelido | `CampoTextoJogo(valor = uiState.apelido, onValorChange = viewModel::alterarApelido, ...)` | O valor fica no ViewModel e não se perde ao girar a tela. |
@@ -391,7 +390,7 @@ Se o jogador errou, ele vê a escolha dele em vermelho **e** a certa em verde, e
 | Botão "Próxima" | Avanço automático após 1,5 s (`delay` + `Job`) | Figma não tem botão Próxima |
 | Feedback em texto ("França - Correto!") | Card verde/vermelho + mensagem colorida | Figma |
 | Dropdowns de categoria e nível | Cards de categoria + chips | Figma |
-| Pedia "Nome do jogador" de novo | Campo já preenchido com o apelido do login | Evita perguntar duas vezes |
+| Pedia "Nome do jogador" aqui **e** no login | Apelido pedido só na tela "Bora descobrir?" (a entrada virou só dois botões) | Não perguntar a mesma coisa duas vezes |
 | Navegação por `partidaIniciada` (voltar reabria o quiz) | Evento `navegarParaQuiz` + `navegacaoRealizada()` | Correção de bug |
 | Voltar do Android não encerrava a partida | `BackHandler` | Correção de bug |
 | Banco vazio = jogo travado | Botão "Baixar bandeiras" | Jogo testável sem o Admin |
@@ -432,5 +431,4 @@ As categorias vêm do banco por `groupBy { it.categoria }`. Um item novo com `ca
 
 ## 12. Observações para o grupo
 - A dica de capital vem da API em inglês ("Capital: Berlin"). Isso é da Pessoa 2 (`QuizRepository`); dá para trocar por um mapa de tradução se quiserem.
-- A barra inferior e a barra de status ainda usam o tema antigo (Pessoa 5), então ainda não combinam com o Figma.
 - **Commits:** a defesa é individual e o professor olha os commits. Quem é a Pessoa 3 deve fazer o commit destas mudanças pela própria conta e conseguir explicar cada seção acima.

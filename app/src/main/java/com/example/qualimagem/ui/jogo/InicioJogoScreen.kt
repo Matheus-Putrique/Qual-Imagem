@@ -45,15 +45,9 @@ import com.example.qualimagem.viewmodel.JogoViewModel
 @Composable
 fun InicioJogoScreen(
     viewModel: JogoViewModel,
-    apelidoInicial: String,
     onIniciarJogo: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    // Reaproveita o apelido digitado no login
-    LaunchedEffect(apelidoInicial) {
-        viewModel.definirApelidoInicial(apelidoInicial)
-    }
 
     // Navega só uma vez quando o ViewModel prepara a partida
     LaunchedEffect(uiState.navegarParaQuiz) {

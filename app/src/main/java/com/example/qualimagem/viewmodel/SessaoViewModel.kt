@@ -6,72 +6,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+/**
+ * Controla qual perfil está usando o app.
+ * O AppNavigation e a BottomNavBar leem `isAdmin` para liberar (ou não) a área do Admin.
+ */
 class SessaoViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(SessaoUiState())
     val uiState: StateFlow<SessaoUiState> = _uiState.asStateFlow()
 
-    fun loginJogador(nickname: String) {
-        val apelidoLimpo = nickname.trim()
-        if (apelidoLimpo.isBlank()) {
-            _uiState.update {
-                it.copy(mensagemErro = "Por favor, digite seu apelido para jogar.")
-            }
-            return
-        }
-
-        if (apelidoLimpo.length < 3) {
-            _uiState.update {
-                it.copy(mensagemErro = "O apelido deve conter no mínimo 3 caracteres.")
-            }
-            return
-        }
-
-        _uiState.update {
-            it.copy(
-                nickname = apelidoLimpo,
-                perfil = "Jogador",
-                isAdmin = false,
-                mensagemErro = null,
-                usuarioLogado = true
-            )
-        }
+    fun entrarComoJogador() {
+        _uiState.update { it.copy(perfil = Perfil.JOGADOR) }
     }
 
-    fun loginAdmin(usuario: String, senha: String) {
-        val usuarioLimpo = usuario.trim()
-        val senhaLimpa = senha.trim()
-
-        if (usuarioLimpo.isBlank() || senhaLimpa.isBlank()) {
-            _uiState.update {
-                it.copy(mensagemErro = "Informe o usuário e a senha de administrador.")
-            }
-            return
-        }
-
-        if (usuarioLimpo == "admin" && senhaLimpa == "admin123") {
-            _uiState.update {
-                it.copy(
-                    nickname = "Administrador",
-                    perfil = "Administrador",
-                    isAdmin = true,
-                    mensagemErro = null,
-                    usuarioLogado = true
-                )
-            }
-        } else {
-            _uiState.update {
-                it.copy(mensagemErro = "Usuário ou senha de administrador incorretos.")
-            }
-        }
+    fun entrarComoAdmin() {
+        _uiState.update { it.copy(perfil = Perfil.ADMIN) }
     }
 
+    /** Volta ao estado inicial (nenhum perfil). Chamado ao voltar para a tela de entrada. */
     fun logout() {
         _uiState.value = SessaoUiState()
     }
-
-    fun limparErro() {
-        _uiState.update { it.copy(mensagemErro = null) }
-    }
 }
-

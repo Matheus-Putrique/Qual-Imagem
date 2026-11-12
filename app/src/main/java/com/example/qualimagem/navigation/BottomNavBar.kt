@@ -1,14 +1,14 @@
 package com.example.qualimagem.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.Collections
-import androidx.compose.material.icons.filled.Leaderboard
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.AdminPanelSettings
-import androidx.compose.material.icons.outlined.Collections
-import androidx.compose.material.icons.outlined.Leaderboard
-import androidx.compose.material.icons.outlined.PlayArrow
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.SportsEsports
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.SportsEsports
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 
 sealed class ItemAba(
@@ -28,33 +27,16 @@ sealed class ItemAba(
     val iconeSelecionado: ImageVector,
     val iconeNaoSelecionado: ImageVector
 ) {
-    object Inicio : ItemAba(
-        rota = RotasAbas.ABA_INICIO,
-        titulo = "Início",
-        iconeSelecionado = Icons.Filled.PlayArrow,
-        iconeNaoSelecionado = Icons.Outlined.PlayArrow
-    )
+    object Jogar : ItemAba(RotasAbas.ABA_JOGAR, "Jogar", Icons.Filled.SportsEsports, Icons.Outlined.SportsEsports)
+    object Galeria : ItemAba(RotasAbas.ABA_GALERIA, "Galeria", Icons.Filled.PhotoLibrary, Icons.Outlined.PhotoLibrary)
+    object Ranking : ItemAba(RotasAbas.ABA_RANKING, "Ranking", Icons.Filled.EmojiEvents, Icons.Outlined.EmojiEvents)
+    object Admin : ItemAba(RotasAbas.ABA_ADMIN, "Admin", Icons.Filled.Shield, Icons.Outlined.Shield)
+}
 
-    object Ranking : ItemAba(
-        rota = RotasAbas.ABA_RANKING,
-        titulo = "Ranking",
-        iconeSelecionado = Icons.Filled.Leaderboard,
-        iconeNaoSelecionado = Icons.Outlined.Leaderboard
-    )
-
-    object Galeria : ItemAba(
-        rota = RotasAbas.ABA_GALERIA,
-        titulo = "Galeria",
-        iconeSelecionado = Icons.Filled.Collections,
-        iconeNaoSelecionado = Icons.Outlined.Collections
-    )
-
-    object Admin : ItemAba(
-        rota = RotasAbas.ABA_ADMIN,
-        titulo = "Admin",
-        iconeSelecionado = Icons.Filled.AdminPanelSettings,
-        iconeNaoSelecionado = Icons.Outlined.AdminPanelSettings
-    )
+/** Aba que fica marcada para cada rota. O Detalhe pertence à aba Galeria. */
+private fun abaDaRota(rota: String?): String? = when (rota) {
+    Rotas.DETALHE -> RotasAbas.ABA_GALERIA
+    else -> rota
 }
 
 @Composable
@@ -62,34 +44,34 @@ fun BottomNavBar(
     navController: NavController,
     isAdmin: Boolean = false
 ) {
-    val itens = mutableListOf(
-        ItemAba.Inicio,
-        ItemAba.Ranking,
-        ItemAba.Galeria
-    )
-
-    if (isAdmin) {
-        itens.add(ItemAba.Admin)
+    // Ordem do Figma: Jogar · Galeria · Ranking · Admin (Admin só aparece para o administrador)
+    val itens = buildList {
+        add(ItemAba.Jogar)
+        add(ItemAba.Galeria)
+        add(ItemAba.Ranking)
+        if (isAdmin) add(ItemAba.Admin)
     }
 
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val rotaAtual = navBackStackEntry?.destination?.route
+    // A primeira tela depois da entrada é a "base" das abas: voltar sempre retorna a ela
+    val rotaBase = if (isAdmin) RotasAbas.ABA_ADMIN else RotasAbas.ABA_JOGAR
 
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
-    ) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val abaAtual = abaDaRota(navBackStackEntry?.destination?.route)
+
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         itens.forEach { item ->
-            val selecionado = rotaAtual == item.rota
+            val selecionado = abaAtual == item.rota
 
             NavigationBarItem(
                 selected = selecionado,
                 onClick = {
-                    if (rotaAtual != item.rota) {
+                    if (selecionado) {
+                        // Já está nesta aba (ex.: no Detalhe da Galeria): volta para a raiz da aba
+                        navController.popBackStack(item.rota, inclusive = false)
+                    } else {
                         navController.navigate(item.rota) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
+                            // Remove as abas abertas até a base, guardando o estado delas
+                            popUpTo(rotaBase) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
                         }
@@ -113,4 +95,3 @@ fun BottomNavBar(
         }
     }
 }
-
