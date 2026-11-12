@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -62,6 +63,8 @@ fun BarraTopo(
             }
         },
         actions = acoes,
+        // O Scaffold do AppNavigation já aplica o espaço da barra de status
+        windowInsets = WindowInsets(0.dp),
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
             titleContentColor = MaterialTheme.colorScheme.onBackground,

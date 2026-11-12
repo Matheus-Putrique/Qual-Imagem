@@ -1,12 +1,9 @@
 package com.example.qualimagem.navigation
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -30,10 +27,13 @@ import com.example.qualimagem.ui.DetalheItemScreen
 import com.example.qualimagem.ui.GaleriaScreen
 import com.example.qualimagem.ui.LoginScreen
 import com.example.qualimagem.ui.RankingScreen
-import com.example.qualimagem.ui.components.BarraTopo
+import com.example.qualimagem.ui.admin.AdminDashboardScreen
+import com.example.qualimagem.ui.admin.AdminFormularioScreen
 import com.example.qualimagem.ui.components.EstadoVazio
 import com.example.qualimagem.ui.jogo.InicioJogoScreen
 import com.example.qualimagem.ui.jogo.JogoQuizScreen
+import com.example.qualimagem.viewmodel.AdminViewModel
+import com.example.qualimagem.viewmodel.AdminViewModelFactory
 import com.example.qualimagem.viewmodel.JogoViewModel
 import com.example.qualimagem.viewmodel.JogoViewModelFactory
 import com.example.qualimagem.viewmodel.RankingViewModel
@@ -64,6 +64,10 @@ fun AppNavigation() {
 
     val rankingViewModel: RankingViewModel = viewModel(
         factory = RankingViewModelFactory(placarRepository, quizRepository)
+    )
+
+    val adminViewModel: AdminViewModel = viewModel(
+        factory = AdminViewModelFactory(quizRepository)
     )
 
     val sessaoUiState by sessaoViewModel.uiState.collectAsState()
@@ -160,14 +164,11 @@ fun AppNavigation() {
             // ---- Área do Admin: só renderiza se a sessão for de administrador ----
             composable(Rotas.ADMIN_DASHBOARD) {
                 if (sessaoUiState.isAdmin) {
-                    Column {
-                        BarraTopo(titulo = "Painel Admin")
-                        EstadoVazio(
-                            mensagem = "Área Administrativa",
-                            subtitulo = "Reservado para a AdminDashboardScreen (Pessoa 6).",
-                            icone = Icons.Outlined.Shield
-                        )
-                    }
+                    AdminDashboardScreen(
+                        viewModel = adminViewModel,
+                        onNovoItem = { navController.navigate(Rotas.adminFormulario()) },
+                        onEditarItem = { idItem -> navController.navigate(Rotas.adminFormulario(idItem)) }
+                    )
                 } else {
                     AcessoNegado()
                 }
@@ -184,17 +185,11 @@ fun AppNavigation() {
             ) { backStackEntry ->
                 val itemId = backStackEntry.arguments?.getInt("id") ?: Rotas.SEM_ID
                 if (sessaoUiState.isAdmin) {
-                    Column {
-                        BarraTopo(
-                            titulo = if (itemId == Rotas.SEM_ID) "Novo item" else "Editar item",
-                            onVoltar = { navController.popBackStack() }
-                        )
-                        EstadoVazio(
-                            mensagem = "Cadastro / Edição de Itens",
-                            subtitulo = "Reservado para a AdminFormularioScreen (Pessoa 6). Id recebido: $itemId",
-                            icone = Icons.Outlined.EditNote
-                        )
-                    }
+                    AdminFormularioScreen(
+                        id = itemId,
+                        viewModel = adminViewModel,
+                        onVoltar = { navController.popBackStack() }
+                    )
                 } else {
                     AcessoNegado()
                 }
