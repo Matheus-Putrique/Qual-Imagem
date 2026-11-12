@@ -1,12 +1,5 @@
 package com.example.qualimagem.ui.admin
 
-// ╔══════════════════════════════════════════════╗
-// ║  AdminDashboardScreen.kt                     ║
-// ║  PAINEL ADMIN: contador do catálogo,         ║
-// ║  sincronizar API, busca/filtro, paginação,   ║
-// ║  editar e excluir itens                      ║
-// ╚══════════════════════════════════════════════╝
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -76,10 +69,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * Versão "com ViewModel": lê o estado e repassa as ações.
- * Quem desenha de fato é o AdminDashboardConteudo (que pode ter @Preview).
- */
 @Composable
 fun AdminDashboardScreen(
     viewModel: AdminViewModel,
@@ -117,7 +106,6 @@ fun AdminDashboardConteudo(
     onPaginaAnterior: () -> Unit,
     onProximaPagina: () -> Unit
 ) {
-    // Estado só da interface: qual item está aguardando confirmação de exclusão
     var itemParaExcluir by remember { mutableStateOf<ItemQuizEntity?>(null) }
 
     LazyColumn(
@@ -135,13 +123,11 @@ fun AdminDashboardConteudo(
             )
         }
 
-        // ---- Card de status + sincronização ----
         item {
             Spacer(Modifier.height(8.dp))
             CardStatus(estado = estado, onSincronizar = onSincronizar)
         }
 
-        // ---- Mensagem de sucesso / erro ----
         estado.mensagemSucesso?.let { msg ->
             item { LinhaMensagem(msg, Icons.Outlined.CheckCircle, CoresJogo.Acerto) }
         }
@@ -162,7 +148,6 @@ fun AdminDashboardConteudo(
             )
         }
 
-        // ---- Filtro por categoria (vem do banco) ----
         if (estado.categorias.isNotEmpty()) {
             item {
                 Row(
@@ -209,7 +194,6 @@ fun AdminDashboardConteudo(
             }
         }
 
-        // ---- Lista da página atual ----
         items(estado.itensPagina, key = { it.id }) { item ->
             CardItemAdmin(
                 item = item,
@@ -218,7 +202,6 @@ fun AdminDashboardConteudo(
             )
         }
 
-        // ---- Paginação ----
         if (estado.totalFiltrado > 0) {
             item {
                 Paginacao(estado, onPaginaAnterior, onProximaPagina)
@@ -226,7 +209,6 @@ fun AdminDashboardConteudo(
         }
     }
 
-    // ---- Confirmação antes do @Delete ----
     itemParaExcluir?.let { item ->
         AlertDialog(
             onDismissRequest = { itemParaExcluir = null },
@@ -246,7 +228,6 @@ fun AdminDashboardConteudo(
     }
 }
 
-/** Card do topo: "250 bandeiras", hora da última sincronização, selo e botão de sincronizar. */
 @Composable
 private fun CardStatus(estado: AdminUiState, onSincronizar: () -> Unit) {
     CardPadrao {
@@ -284,7 +265,6 @@ private fun CardStatus(estado: AdminUiState, onSincronizar: () -> Unit) {
     }
 }
 
-/** Selo "✓ Em dia" (sincronizou nesta sessão), "Vazio" ou "Local". */
 @Composable
 private fun SeloStatus(estado: AdminUiState) {
     val (texto, cor) = when {
@@ -324,7 +304,6 @@ private fun LinhaMensagem(texto: String, icone: androidx.compose.ui.graphics.vec
     }
 }
 
-/** Uma linha do catálogo: imagem, nome, "Bandeiras · Fácil", editar e excluir. */
 @Composable
 private fun CardItemAdmin(item: ItemQuizEntity, onEditar: () -> Unit, onExcluir: () -> Unit) {
     CardPadrao(onClick = onEditar) {
@@ -367,7 +346,6 @@ private fun CardItemAdmin(item: ItemQuizEntity, onEditar: () -> Unit, onExcluir:
     }
 }
 
-/** "Exibindo 1–20 de 250"  ‹ Anteriores   Próximos › */
 @Composable
 private fun Paginacao(estado: AdminUiState, onAnterior: () -> Unit, onProxima: () -> Unit) {
     Row(
@@ -410,7 +388,6 @@ private fun BotaoPagina(
     }
 }
 
-// ── Preview ──────────────────────────────────────
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AdminDashboardPreview() {

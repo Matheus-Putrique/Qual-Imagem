@@ -15,24 +15,18 @@ import java.text.Collator
 import java.util.Calendar
 import java.util.Locale
 
-/**
- * ViewModel das telas Ranking, Galeria e Detalhe.
- * Observa as duas tabelas do Room (placares e itens) e aplica filtros/ordenações em Kotlin.
- */
 class RankingViewModel(
     private val placarRepository: PlacarRepository,
     private val quizRepository: QuizRepository
 ) : ViewModel() {
 
     companion object {
-        /** Ordem "natural" dos níveis (sorted() daria Difícil, Fácil, Médio). */
         val ORDEM_DIFICULDADES = listOf("Fácil", "Médio", "Difícil")
     }
 
     private val _uiState = MutableStateFlow(RankingUiState())
     val uiState: StateFlow<RankingUiState> = _uiState.asStateFlow()
 
-    // Cópias completas das tabelas; os filtros sempre partem delas
     private var todosPlacares: List<PlacarEntity> = emptyList()
     private var todosItens: List<ItemQuizEntity> = emptyList()
 
@@ -41,14 +35,12 @@ class RankingViewModel(
     }
 
     init {
-        // Flow do Room: qualquer insert/update/delete em "placares" chega aqui sozinho
         viewModelScope.launch {
             placarRepository.buscarTodos().collect { placares ->
                 todosPlacares = placares
                 atualizarRanking()
             }
         }
-        // Mesmo para "itens_quiz" (sincronização da API, cadastro do Admin)
         viewModelScope.launch {
             quizRepository.buscarTodos().collect { itens ->
                 todosItens = itens
@@ -56,10 +48,6 @@ class RankingViewModel(
             }
         }
     }
-
-    // ------------------------------------------------------------------
-    // Ranking
-    // ------------------------------------------------------------------
 
     fun alterarBusca(busca: String) {
         _uiState.update { it.copy(busca = busca) }
@@ -81,7 +69,6 @@ class RankingViewModel(
         atualizarRanking()
     }
 
-    /** Aplica busca + categoria + nível + período e ordena da maior para a menor pontuação. */
     private fun atualizarRanking() {
         val estado = _uiState.value
         val busca = estado.busca.trim()
@@ -97,7 +84,7 @@ class RankingViewModel(
             .sortedWith(
                 compareByDescending<PlacarEntity> { it.pontuacao }
                     .thenByDescending { it.acertos }
-                    .thenBy { it.dataHora }   // empate: quem fez primeiro fica na frente
+                    .thenBy { it.dataHora }
             )
 
         val niveisExistentes = todosPlacares.map { it.dificuldade }.toSet()
@@ -112,7 +99,6 @@ class RankingViewModel(
         }
     }
 
-    /** Converte o período escolhido no menor `dataHora` aceito (em milissegundos). */
     private fun inicioDoPeriodo(periodo: PeriodoRanking): Long {
         if (periodo == PeriodoRanking.GERAL) return 0L
 
@@ -128,7 +114,6 @@ class RankingViewModel(
         return calendario.timeInMillis
     }
 
-    /** @Update: troca o apelido de um registro salvo. */
     fun editarApelido(placar: PlacarEntity, novoApelido: String) {
         val apelido = novoApelido.trim()
         if (apelido.isBlank()) return
@@ -141,7 +126,6 @@ class RankingViewModel(
         }
     }
 
-    /** @Delete: apaga um registro do histórico. */
     fun apagarRegistro(placar: PlacarEntity) {
         viewModelScope.launch {
             val resultado = placarRepository.deletar(placar)
@@ -150,10 +134,6 @@ class RankingViewModel(
             }
         }
     }
-
-    // ------------------------------------------------------------------
-    // Galeria e Detalhe
-    // ------------------------------------------------------------------
 
     fun alterarBuscaGaleria(busca: String) {
         _uiState.update { it.copy(buscaGaleria = busca) }
@@ -165,7 +145,6 @@ class RankingViewModel(
         atualizarGaleria()
     }
 
-    /** Alterna entre "Nome A-Z" e "Nome Z-A". */
     fun alternarOrdemGaleria() {
         _uiState.update {
             it.copy(ordemGaleria = if (it.ordemGaleria == OrdemGaleria.A_Z) OrdemGaleria.Z_A else OrdemGaleria.A_Z)
@@ -182,7 +161,6 @@ class RankingViewModel(
                 (busca.isBlank() || item.nomeCorreto.contains(busca, ignoreCase = true))
         }
 
-        // Collator em português: ordena ignorando acentos (Alândia antes de Alemanha)
         val porNome = compareBy<ItemQuizEntity, String>(collatorPortugues) { it.nomeCorreto }
         val ordenados = when (estado.ordemGaleria) {
             OrdemGaleria.A_Z -> filtrados.sortedWith(porNome)

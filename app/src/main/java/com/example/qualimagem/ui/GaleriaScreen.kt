@@ -48,10 +48,6 @@ import com.example.qualimagem.ui.jogo.CampoTextoJogo
 import com.example.qualimagem.ui.jogo.CoresJogo
 import com.example.qualimagem.viewmodel.RankingViewModel
 
-/**
- * "Um mundo para ver": catálogo de todos os itens salvos no Room,
- * com busca, filtro por categoria, ordenação A-Z/Z-A e toque para abrir o detalhe.
- */
 @Composable
 fun GaleriaScreen(
     viewModel: RankingViewModel,
@@ -84,7 +80,6 @@ fun GaleriaScreen(
             )
         }
 
-        // ---- Chips: Todas + categorias do banco + "Em Breve" bloqueado ----
         item {
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -113,7 +108,6 @@ fun GaleriaScreen(
             }
         }
 
-        // ---- Contador + ordenação ----
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -140,7 +134,6 @@ fun GaleriaScreen(
             item { GaleriaVazia(temBusca = uiState.buscaGaleria.isNotBlank()) }
         }
 
-        // ---- Lista (LazyColumn só desenha o que está visível na tela) ----
         items(uiState.itensGaleria, key = { it.id }) { item ->
             CardItemGaleria(item = item, onClick = { onAbrirDetalhe(item.id) })
         }
@@ -161,7 +154,6 @@ fun GaleriaScreen(
     }
 }
 
-/** "250 países na coleção" quando só há bandeiras; "N itens na coleção" se misturar categorias. */
 private fun textoContador(itens: List<ItemQuizEntity>): String {
     val soBandeiras = itens.isNotEmpty() && itens.all { it.categoria.equals("Bandeiras", ignoreCase = true) }
     val unidade = when {
@@ -173,7 +165,6 @@ private fun textoContador(itens: List<ItemQuizEntity>): String {
     return "${itens.size} $unidade na coleção"
 }
 
-/** Card da lista: imagem, nome, nível colorido e seta ">". */
 @Composable
 private fun CardItemGaleria(item: ItemQuizEntity, onClick: () -> Unit) {
     val forma = RoundedCornerShape(16.dp)

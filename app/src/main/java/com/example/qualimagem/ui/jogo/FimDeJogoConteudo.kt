@@ -31,10 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.qualimagem.viewmodel.JogoUiState
 
-/**
- * Resumo mostrado quando a partida acaba (vidas zeradas ou 10 rodadas jogadas).
- * Nesse momento o placar já foi salvo no Room pelo JogoViewModel.
- */
 @Composable
 fun FimDeJogoConteudo(
     uiState: JogoUiState,
@@ -80,7 +76,6 @@ fun FimDeJogoConteudo(
 
         Spacer(Modifier.height(24.dp))
 
-        // Pontuação principal
         CaixaDestaque {
             Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("PONTUAÇÃO", color = CoresJogo.Primaria, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
@@ -95,7 +90,6 @@ fun FimDeJogoConteudo(
 
         Spacer(Modifier.height(12.dp))
 
-        // Estatísticas lado a lado
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Estatistica("Acertos", "${uiState.acertos}", Modifier.weight(1f))
             Estatistica("Rodadas", "${uiState.perguntasRespondidas}/${uiState.totalRodadas}", Modifier.weight(1f))

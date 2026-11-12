@@ -38,10 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.qualimagem.viewmodel.JogoViewModel
 
-/**
- * Tela "Bora descobrir?": o jogador confirma o apelido,
- * escolhe a categoria (lida do banco) e o nível, e inicia a partida.
- */
 @Composable
 fun InicioJogoScreen(
     viewModel: JogoViewModel,
@@ -49,7 +45,6 @@ fun InicioJogoScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Navega só uma vez quando o ViewModel prepara a partida
     LaunchedEffect(uiState.navegarParaQuiz) {
         if (uiState.navegarParaQuiz) {
             viewModel.navegacaoRealizada()
@@ -64,7 +59,6 @@ fun InicioJogoScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
-        // ---- Cabeçalho ----
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("Bora descobrir?", color = CoresJogo.Texto, fontSize = 26.sp, fontWeight = FontWeight.Bold)
@@ -84,7 +78,6 @@ fun InicioJogoScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // ---- Banner com as regras ----
         CaixaDestaque {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Public, contentDescription = null, tint = CoresJogo.Primaria, modifier = Modifier.size(28.dp))
@@ -102,7 +95,6 @@ fun InicioJogoScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // ---- Apelido ----
         Text("Seu apelido", color = CoresJogo.TextoSecundario, fontSize = 12.sp)
         Spacer(Modifier.height(8.dp))
         CampoTextoJogo(
@@ -114,7 +106,6 @@ fun InicioJogoScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // ---- Categorias ----
         Text("Escolha a categoria", color = CoresJogo.Texto, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         Spacer(Modifier.height(12.dp))
 
@@ -124,8 +115,6 @@ fun InicioJogoScreen(
                 onBaixar = viewModel::sincronizarBandeiras
             )
         } else {
-            // Grade de 2 colunas: categorias do banco + o card "Em Breve" no final.
-            // O null no fim da lista representa o card "Em Breve".
             val itensGrade = uiState.categorias + null
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -151,7 +140,6 @@ fun InicioJogoScreen(
 
         Spacer(Modifier.height(24.dp))
 
-        // ---- Nível ----
         Text("Qual vai ser o nível?", color = CoresJogo.Texto, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         Spacer(Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -178,7 +166,6 @@ fun InicioJogoScreen(
             )
         }
 
-        // ---- Iniciar ----
         BotaoPilula(
             texto = "Iniciar Partida",
             icone = Icons.Rounded.PlayArrow,
@@ -197,7 +184,6 @@ fun InicioJogoScreen(
     }
 }
 
-/** Mostrado quando o Room ainda não tem nenhum item: permite baixar as bandeiras da API. */
 @Composable
 private fun BancoVazio(sincronizando: Boolean, onBaixar: () -> Unit) {
     Column(

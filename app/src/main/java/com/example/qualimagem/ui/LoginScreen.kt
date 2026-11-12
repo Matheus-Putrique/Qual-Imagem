@@ -37,16 +37,11 @@ import androidx.compose.ui.unit.sp
 import com.example.qualimagem.ui.components.BotaoPrincipal
 import com.example.qualimagem.viewmodel.SessaoViewModel
 
-/**
- * Tela de entrada: só dois botões, sem usuário/senha.
- * Um botão entra como Jogador e o outro como Administrador.
- */
 @Composable
 fun LoginScreen(
     viewModel: SessaoViewModel,
     onEntrar: (isAdmin: Boolean) -> Unit
 ) {
-    // Sempre que esta tela aparece (inclusive ao voltar para ela), a sessão é zerada
     LaunchedEffect(Unit) {
         viewModel.logout()
     }
@@ -105,12 +100,10 @@ fun LoginScreen(
     }
 }
 
-/** Ícone central do Figma: quadro de "scan" com um olho, e duas bandeiras inclinadas atrás. */
 @Composable
 private fun IlustracaoLogo() {
     val cores = MaterialTheme.colorScheme
     Box(modifier = Modifier.size(width = 200.dp, height = 150.dp), contentAlignment = Alignment.Center) {
-        // Bandeira listrada (azul/branco/vermelho) à esquerda
         BandeiraDesenhada(
             modifier = Modifier
                 .offset(x = (-52).dp, y = 30.dp)
@@ -121,7 +114,6 @@ private fun IlustracaoLogo() {
             drawRect(Color.White, topLeft = Offset(faixa, 0f), size = Size(faixa, tamanho.height))
             drawRect(Color(0xFFDC2626), topLeft = Offset(faixa * 2, 0f), size = Size(faixa, tamanho.height))
         }
-        // Bandeira com círculo vermelho à direita
         BandeiraDesenhada(
             modifier = Modifier
                 .offset(x = 52.dp, y = 38.dp)
@@ -130,7 +122,6 @@ private fun IlustracaoLogo() {
             drawRect(Color.White, size = tamanho)
             drawCircle(Color(0xFFBC002D), radius = tamanho.height * 0.3f)
         }
-        // Quadro central
         Box(
             modifier = Modifier
                 .size(108.dp)

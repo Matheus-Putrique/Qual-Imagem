@@ -43,10 +43,6 @@ import com.example.qualimagem.data.ItemQuizEntity
 import com.example.qualimagem.viewmodel.JogoUiState
 import com.example.qualimagem.viewmodel.JogoViewModel
 
-/**
- * Tela da partida. Decide entre 3 conteúdos a partir do JogoUiState:
- * carregando, rodada em andamento ou resumo de fim de jogo.
- */
 @Composable
 fun JogoQuizScreen(
     viewModel: JogoViewModel,
@@ -59,7 +55,6 @@ fun JogoQuizScreen(
         onVoltarInicio()
     }
 
-    // Botão "voltar" do sistema também encerra a partida corretamente
     BackHandler(onBack = sair)
 
     Box(
@@ -105,7 +100,6 @@ private fun RodadaConteudo(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // ---- Topo: voltar, rodada e vidas ----
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onVoltar) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Sair da partida", tint = CoresJogo.Texto)
@@ -123,7 +117,6 @@ private fun RodadaConteudo(
             )
         }
 
-        // ---- Progresso e pontos ----
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
             BarraProgressoRodadas(progresso = uiState.progresso, modifier = Modifier.weight(1f))
             Spacer(Modifier.width(14.dp))
@@ -133,7 +126,6 @@ private fun RodadaConteudo(
 
         Spacer(Modifier.height(16.dp))
 
-        // ---- Pergunta ----
         Text(
             "${uiState.categoriaSelecionada} · ${uiState.dificuldadeSelecionada}".uppercase(),
             color = CoresJogo.Primaria,
@@ -152,7 +144,6 @@ private fun RodadaConteudo(
 
         Spacer(Modifier.height(14.dp))
 
-        // ---- Imagem (Coil carrega a URL salva no Room) ----
         CaixaDestaque {
             AsyncImage(
                 model = pergunta.imagemUrl,
@@ -166,7 +157,6 @@ private fun RodadaConteudo(
 
         Spacer(Modifier.height(12.dp))
 
-        // ---- Dica ----
         if (uiState.dicaVisivel) {
             CaixaDestaque(fundo = CoresJogo.DicaFundo, borda = CoresJogo.Dica.copy(alpha = 0.5f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -185,7 +175,6 @@ private fun RodadaConteudo(
 
         Spacer(Modifier.height(12.dp))
 
-        // ---- Alternativas A, B, C, D ----
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             uiState.alternativas.forEachIndexed { indice, alternativa ->
                 CardAlternativa(
@@ -199,7 +188,6 @@ private fun RodadaConteudo(
 
         Spacer(Modifier.height(12.dp))
 
-        // ---- Feedback da resposta ----
         when (uiState.respostaCorreta) {
             true -> Feedback(
                 texto = "Boa! Resposta correta. +${uiState.pontosUltimaResposta} pts",
@@ -214,11 +202,6 @@ private fun RodadaConteudo(
     }
 }
 
-/**
- * Regra de cor das alternativas:
- * antes de responder todas ficam neutras; depois, a certa fica verde,
- * a escolhida errada fica vermelha e as outras ficam apagadas.
- */
 private fun estadoDaAlternativa(
     uiState: JogoUiState,
     pergunta: ItemQuizEntity,
@@ -230,7 +213,6 @@ private fun estadoDaAlternativa(
     else -> EstadoAlternativa.DESATIVADA
 }
 
-/** Texto da pergunta muda conforme a categoria (o jogo aceita várias categorias). */
 private fun textoPergunta(categoria: String): String =
     if (categoria.equals("Bandeiras", ignoreCase = true)) {
         "De qual país é\nesta bandeira?"

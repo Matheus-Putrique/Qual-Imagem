@@ -49,11 +49,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.qualimagem.viewmodel.CategoriaResumo
 
-/* Componentes visuais reaproveitados pelas telas da parte 3 (Início e Quiz). */
-
 private val CantoCard = RoundedCornerShape(16.dp)
 
-/** Botão em formato de pílula. `primario = false` gera o botão escuro com borda. */
 @Composable
 fun BotaoPilula(
     texto: String,
@@ -95,7 +92,6 @@ fun BotaoPilula(
     }
 }
 
-/** Chip selecionável usado para escolher o nível (Fácil / Médio / Difícil). */
 @Composable
 fun ChipOpcao(
     texto: String,
@@ -133,7 +129,6 @@ fun ChipOpcao(
     }
 }
 
-/** Campo de texto escuro com ícone à esquerda e placeholder (estilo Figma). */
 @Composable
 fun CampoTextoJogo(
     valor: String,
@@ -172,7 +167,6 @@ fun CampoTextoJogo(
     )
 }
 
-/** Card de uma categoria vinda do banco (ex.: Bandeiras), com a primeira imagem como capa. */
 @Composable
 fun CardCategoria(
     categoria: CategoriaResumo,
@@ -228,13 +222,11 @@ fun CardCategoria(
     }
 }
 
-/** "195 países para explorar" para Bandeiras; texto genérico para outras categorias. */
 private fun textoQuantidade(categoria: CategoriaResumo): String {
     val unidade = if (categoria.nome.equals("Bandeiras", ignoreCase = true)) "países" else "imagens"
     return "${categoria.quantidadeItens} $unidade para explorar"
 }
 
-/** Card bloqueado "Em Breve" (mostra que o jogo aceita outras categorias no futuro). */
 @Composable
 fun CardEmBreve(modifier: Modifier = Modifier) {
     Column(
@@ -253,10 +245,8 @@ fun CardEmBreve(modifier: Modifier = Modifier) {
     }
 }
 
-/** Estados visuais possíveis de uma alternativa do quiz. */
 enum class EstadoAlternativa { NEUTRA, CORRETA, ERRADA, DESATIVADA }
 
-/** Linha de alternativa "A  Itália" — fica verde/vermelha depois da resposta. */
 @Composable
 fun CardAlternativa(
     letra: Char,
@@ -305,7 +295,6 @@ fun CardAlternativa(
     }
 }
 
-/** Corações de vida no topo do quiz: cheios = vidas restantes, vazados = perdidas. */
 @Composable
 fun IndicadorVidas(vidasRestantes: Int, vidasTotais: Int) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -321,7 +310,6 @@ fun IndicadorVidas(vidasRestantes: Int, vidasTotais: Int) {
     }
 }
 
-/** Barra de progresso fina das rodadas. */
 @Composable
 fun BarraProgressoRodadas(progresso: Float, modifier: Modifier = Modifier) {
     LinearProgressIndicator(
@@ -337,7 +325,6 @@ fun BarraProgressoRodadas(progresso: Float, modifier: Modifier = Modifier) {
     )
 }
 
-/** Caixa de destaque arredondada (usada no banner do início e no resumo do fim de jogo). */
 @Composable
 fun CaixaDestaque(
     modifier: Modifier = Modifier,

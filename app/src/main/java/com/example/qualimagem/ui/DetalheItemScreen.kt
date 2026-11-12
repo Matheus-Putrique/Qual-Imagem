@@ -41,10 +41,6 @@ import com.example.qualimagem.ui.jogo.CaixaDestaque
 import com.example.qualimagem.ui.jogo.CoresJogo
 import com.example.qualimagem.viewmodel.RankingViewModel
 
-/**
- * Detalhe de um item. Recebe só o `id` pela rota "detalhe/{id}"
- * e procura o item na lista que o RankingViewModel já observa do Room.
- */
 @Composable
 fun DetalheItemScreen(
     id: Int,
@@ -52,7 +48,6 @@ fun DetalheItemScreen(
     onVoltar: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    // Busca reativa: se o item for editado pelo Admin, a tela atualiza sozinha
     val item = uiState.itens.firstOrNull { it.id == id }
 
     Column(
@@ -62,7 +57,6 @@ fun DetalheItemScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 12.dp)
     ) {
-        // ---- Barra superior ----
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onVoltar) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Voltar", tint = CoresJogo.Texto)
@@ -84,7 +78,6 @@ fun DetalheItemScreen(
 private fun ConteudoDetalhe(item: ItemQuizEntity) {
     val ehBandeira = item.categoria.equals("Bandeiras", ignoreCase = true)
 
-    // Imagem grande
     CaixaDestaque {
         AsyncImage(
             model = item.imagemUrl,
@@ -102,7 +95,6 @@ private fun ConteudoDetalhe(item: ItemQuizEntity) {
 
     Spacer(Modifier.height(10.dp))
 
-    // Etiquetas: categoria + nível
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TagPequena(item.categoria, CoresJogo.Primaria, icone = Icons.Outlined.Flag, grande = true)
         TagPequena(item.dificuldade, CoresJogo.corDificuldade(item.dificuldade), grande = true)
@@ -110,7 +102,6 @@ private fun ConteudoDetalhe(item: ItemQuizEntity) {
 
     Spacer(Modifier.height(20.dp))
 
-    // Informações: região + categoria
     CaixaDestaque {
         Column {
             LinhaInfo(Icons.Outlined.Place, "Região", traduzirRegiao(item.subcategoria))
@@ -121,7 +112,6 @@ private fun ConteudoDetalhe(item: ItemQuizEntity) {
 
     Spacer(Modifier.height(16.dp))
 
-    // Caixa âmbar "PARA LEMBRAR" com a dica
     CaixaDestaque(fundo = CoresJogo.DicaFundo, borda = CoresJogo.Dica.copy(alpha = 0.4f)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Outlined.Lightbulb, contentDescription = null, tint = CoresJogo.Dica)
@@ -135,7 +125,6 @@ private fun ConteudoDetalhe(item: ItemQuizEntity) {
 
     Spacer(Modifier.height(16.dp))
 
-    // Texto montado só com dados reais do item (o banco não tem campo de descrição)
     Text(
         "${if (ehBandeira) "Esta bandeira" else "Esta imagem"} aparece no quiz no nível ${item.dificuldade}. " +
             "Use a dica acima para lembrar dela na próxima partida.",

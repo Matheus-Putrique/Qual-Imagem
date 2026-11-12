@@ -98,7 +98,6 @@ fun AppNavigation() {
             startDestination = Rotas.LOGIN,
             modifier = Modifier.padding(paddingValores)
         ) {
-            // A tela de entrada continua na pilha: voltar das abas iniciais retorna a ela (trocar de perfil)
             composable(Rotas.LOGIN) {
                 LoginScreen(
                     viewModel = sessaoViewModel,
@@ -161,7 +160,6 @@ fun AppNavigation() {
                 )
             }
 
-            // ---- Área do Admin: só renderiza se a sessão for de administrador ----
             composable(Rotas.ADMIN_DASHBOARD) {
                 if (sessaoUiState.isAdmin) {
                     AdminDashboardScreen(

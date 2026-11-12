@@ -1,12 +1,5 @@
 package com.example.qualimagem.ui.admin
 
-// ╔══════════════════════════════════════════════╗
-// ║  AdminFormularioScreen.kt                    ║
-// ║  FORMULÁRIO: cadastrar item novo (@Insert)   ║
-// ║  ou editar item existente (@Update)          ║
-// ║  Recebe o id pela rota admin_formulario?id=  ║
-// ╚══════════════════════════════════════════════╝
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -66,14 +59,12 @@ import com.example.qualimagem.viewmodel.AdminViewModel
 import com.example.qualimagem.viewmodel.CampoFormulario
 import com.example.qualimagem.viewmodel.FormularioItem
 
-/** Versão "com ViewModel": carrega o item pelo id e repassa as ações. */
 @Composable
 fun AdminFormularioScreen(
     id: Int,
     viewModel: AdminViewModel,
     onVoltar: () -> Unit
 ) {
-    // Ao abrir a tela (ou trocar o id), prepara o formulário: vazio ou com os dados do item
     LaunchedEffect(id) {
         viewModel.abrirFormulario(id)
     }
@@ -109,7 +100,6 @@ fun AdminFormularioConteudo(
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        // O Scaffold principal (AppNavigation) já reserva o espaço da barra de status
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             BarraTopo(
@@ -148,7 +138,6 @@ fun AdminFormularioConteudo(
                 erro = formulario.erros[CampoFormulario.CATEGORIA],
                 capitalizar = true
             )
-            // Atalhos: categorias que já existem no banco (ou digite uma nova acima)
             if (categoriasExistentes.isNotEmpty()) {
                 Row(
                     modifier = Modifier
@@ -230,7 +219,6 @@ fun AdminFormularioConteudo(
     }
 }
 
-/** Topo do formulário: prévia da imagem digitada + "CATÁLOGO DE BANDEIRAS". */
 @Composable
 private fun CabecalhoPreview(formulario: FormularioItem) {
     CardPadrao {
@@ -246,7 +234,6 @@ private fun CabecalhoPreview(formulario: FormularioItem) {
                 if (formulario.imagemUrl.isBlank()) {
                     Icon(Icons.Outlined.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
-                    // Prévia ao vivo: o Coil carrega a URL enquanto o admin digita
                     AsyncImage(
                         model = formulario.imagemUrl.trim(),
                         contentDescription = "Prévia da imagem",
@@ -275,7 +262,6 @@ private fun CabecalhoPreview(formulario: FormularioItem) {
     }
 }
 
-/** Rótulo acima + OutlinedTextField + mensagem de erro (padrão de formulário das aulas). */
 @Composable
 private fun CampoFormularioTexto(
     rotulo: String,
@@ -315,7 +301,6 @@ private fun CampoFormularioTexto(
     Spacer(Modifier.height(if (erro != null) 4.dp else 16.dp))
 }
 
-// ── Preview ──────────────────────────────────────
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AdminFormularioPreview() {

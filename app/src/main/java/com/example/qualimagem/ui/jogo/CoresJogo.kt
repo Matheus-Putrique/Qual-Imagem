@@ -2,10 +2,6 @@ package com.example.qualimagem.ui.jogo
 
 import androidx.compose.ui.graphics.Color
 
-/**
- * Paleta tirada do Figma (tema escuro azul-marinho).
- * Fica dentro do pacote ui/jogo para a parte 3 não depender do tema global.
- */
 object CoresJogo {
     val Fundo = Color(0xFF0A1228)
     val Superficie = Color(0xFF16213A)
@@ -29,7 +25,6 @@ object CoresJogo {
     val Dica = Color(0xFFF59E0B)
     val DicaFundo = Color(0xFF3A2C0E)
 
-    /** Cor do texto de cada nível de dificuldade. */
     fun corDificuldade(dificuldade: String): Color = when (dificuldade) {
         "Médio" -> Dica
         "Difícil" -> Erro

@@ -1,12 +1,5 @@
 package com.example.qualimagem.viewmodel
 
-// ╔══════════════════════════════════════════════╗
-// ║  AdminViewModel.kt                           ║
-// ║  Regras da área do Administrador:            ║
-// ║  sincronizar a API, listar/buscar/paginar,   ║
-// ║  criar, editar e excluir itens (CRUD)        ║
-// ╚══════════════════════════════════════════════╝
-
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -28,25 +21,19 @@ class AdminViewModel(
         val DIFICULDADES = listOf("Fácil", "Médio", "Difícil")
     }
 
-    // Estado: painel (só o ViewModel pode mudar → private set)
     var uiState by mutableStateOf(AdminUiState())
         private set
 
-    // Estado: formulário de criar/editar
     var formulario by mutableStateOf(FormularioItem())
         private set
 
-    // Lista completa do banco (os filtros sempre partem dela)
     private var todosItens: List<ItemQuizEntity> = emptyList()
 
-    // Item que está sendo editado (null = cadastrando um novo)
     private var itemEmEdicao: ItemQuizEntity? = null
 
-    // Ordena "Alândia" antes de "Alemanha" (ignora acentos)
     private val collator = Collator.getInstance(Locale("pt", "BR")).apply { strength = Collator.PRIMARY }
 
     init {
-        // Read do CRUD: o Flow do Room avisa sempre que a tabela muda
         viewModelScope.launch {
             quizRepository.buscarTodos().collect { itens ->
                 todosItens = itens
@@ -54,10 +41,6 @@ class AdminViewModel(
             }
         }
     }
-
-    // ------------------------------------------------------------------
-    // Painel: busca, filtro e paginação
-    // ------------------------------------------------------------------
 
     fun alterarBusca(texto: String) {
         uiState = uiState.copy(busca = texto, pagina = 0)
@@ -93,7 +76,6 @@ class AdminViewModel(
             }
             .sortedWith(compareBy<ItemQuizEntity, String>(collator) { it.nomeCorreto })
 
-        // Se a lista diminuiu (ex.: excluiu o último item da página), volta para uma página válida
         val ultimaPagina = if (filtrados.isEmpty()) 0 else (filtrados.size - 1) / ITENS_POR_PAGINA
         val pagina = uiState.pagina.coerceIn(0, ultimaPagina)
 
@@ -106,12 +88,8 @@ class AdminViewModel(
         )
     }
 
-    // ------------------------------------------------------------------
-    // Sincronização com a API (Retrofit → Repository → Room)
-    // ------------------------------------------------------------------
-
     fun sincronizarApi() {
-        if (uiState.sincronizandoApi) return   // evita dois cliques seguidos
+        if (uiState.sincronizandoApi) return
 
         viewModelScope.launch {
             uiState = uiState.copy(sincronizandoApi = true, mensagemSucesso = null, mensagemErro = null)
@@ -140,10 +118,6 @@ class AdminViewModel(
         }
     }
 
-    // ------------------------------------------------------------------
-    // Delete
-    // ------------------------------------------------------------------
-
     fun excluirItem(item: ItemQuizEntity) {
         viewModelScope.launch {
             val resultado = quizRepository.deletarItem(item)
@@ -159,11 +133,6 @@ class AdminViewModel(
         uiState = uiState.copy(mensagemSucesso = null, mensagemErro = null)
     }
 
-    // ------------------------------------------------------------------
-    // Formulário: Create e Update
-    // ------------------------------------------------------------------
-
-    /** Abre o formulário vazio (id = -1) ou preenchido com o item a editar. */
     fun abrirFormulario(id: Int) {
         val item = todosItens.firstOrNull { it.id == id }
         itemEmEdicao = item
@@ -183,7 +152,6 @@ class AdminViewModel(
         }
     }
 
-    // Cada campo tem sua função; ao digitar, o erro daquele campo some
     fun alterarNome(valor: String) {
         formulario = formulario.copy(nomeCorreto = valor, erros = formulario.erros - CampoFormulario.NOME)
     }
@@ -208,7 +176,6 @@ class AdminViewModel(
         formulario = formulario.copy(dificuldade = valor)
     }
 
-    /** Valida os campos; retorna um mapa vazio quando está tudo certo. */
     private fun validar(f: FormularioItem): Map<CampoFormulario, String> {
         val erros = mutableMapOf<CampoFormulario, String>()
         val nome = f.nomeCorreto.trim()
@@ -220,7 +187,6 @@ class AdminViewModel(
         }
         if (f.dica.isBlank()) erros[CampoFormulario.DICA] = "Informe uma dica para o jogador."
 
-        // Não deixa cadastrar dois itens com o mesmo nome na mesma categoria
         val duplicado = todosItens.any {
             it.id != itemEmEdicao?.id &&
                 it.categoria.equals(f.categoria.trim(), ignoreCase = true) &&
@@ -231,7 +197,6 @@ class AdminViewModel(
         return erros
     }
 
-    /** Insere (Create) ou atualiza (Update) e chama [aoConcluir] se deu certo. */
     fun salvarFormulario(aoConcluir: () -> Unit) {
         val f = formulario
         if (f.salvando) return
@@ -247,7 +212,6 @@ class AdminViewModel(
 
             val original = itemEmEdicao
             val resultado = if (original != null) {
-                // Update: copy() mantém o MESMO id, e é pelo id que o @Update acha a linha
                 quizRepository.atualizarItem(
                     original.copy(
                         nomeCorreto = f.nomeCorreto.trim(),
@@ -259,7 +223,6 @@ class AdminViewModel(
                     )
                 )
             } else {
-                // Create: id = 0 faz o Room gerar um id novo (autoGenerate)
                 quizRepository.inserirItem(
                     ItemQuizEntity(
                         nomeCorreto = f.nomeCorreto.trim(),

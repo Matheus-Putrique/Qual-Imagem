@@ -7,10 +7,10 @@ import androidx.room.PrimaryKey
 data class ItemQuizEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val nomeCorreto: String, // ex: "Japão"
+    val nomeCorreto: String,
     val imagemUrl: String,
     val categoria: String = "Bandeiras",
-    val subcategoria: String, // ex: continente
+    val subcategoria: String,
     val dica: String,
-    val dificuldade: String // "Fácil", "Médio", "Difícil"
+    val dificuldade: String
 )

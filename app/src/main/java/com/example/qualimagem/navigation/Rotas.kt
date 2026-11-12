@@ -9,10 +9,8 @@ object Rotas {
     const val DETALHE = "detalhe/{id}"
     const val ADMIN_DASHBOARD = "admin_dashboard"
 
-    /** "?id=" é opcional: sem id = cadastrar item novo; com id = editar o item. */
     const val ADMIN_FORMULARIO = "admin_formulario?id={id}"
 
-    /** Valor usado quando o formulário abre sem id (novo item). */
     const val SEM_ID = -1
 
     fun detalhe(id: Int): String = "detalhe/$id"

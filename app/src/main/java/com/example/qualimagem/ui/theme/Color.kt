@@ -2,7 +2,6 @@ package com.example.qualimagem.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Paleta do Figma (tema escuro azul-marinho). Mesmos valores usados em ui/jogo/CoresJogo.
 val AzulMarinhoFundo = Color(0xFF0A1228)
 val AzulSuperficie = Color(0xFF16213A)
 val AzulSuperficieElevada = Color(0xFF1E2A44)

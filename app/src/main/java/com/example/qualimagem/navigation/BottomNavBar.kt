@@ -33,7 +33,6 @@ sealed class ItemAba(
     object Admin : ItemAba(RotasAbas.ABA_ADMIN, "Admin", Icons.Filled.Shield, Icons.Outlined.Shield)
 }
 
-/** Aba que fica marcada para cada rota. O Detalhe pertence à aba Galeria. */
 private fun abaDaRota(rota: String?): String? = when (rota) {
     Rotas.DETALHE -> RotasAbas.ABA_GALERIA
     else -> rota
@@ -44,7 +43,6 @@ fun BottomNavBar(
     navController: NavController,
     isAdmin: Boolean = false
 ) {
-    // Ordem do Figma: Jogar · Galeria · Ranking · Admin (Admin só aparece para o administrador)
     val itens = buildList {
         add(ItemAba.Jogar)
         add(ItemAba.Galeria)
@@ -52,7 +50,6 @@ fun BottomNavBar(
         if (isAdmin) add(ItemAba.Admin)
     }
 
-    // A primeira tela depois da entrada é a "base" das abas: voltar sempre retorna a ela
     val rotaBase = if (isAdmin) RotasAbas.ABA_ADMIN else RotasAbas.ABA_JOGAR
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -66,11 +63,9 @@ fun BottomNavBar(
                 selected = selecionado,
                 onClick = {
                     if (selecionado) {
-                        // Já está nesta aba (ex.: no Detalhe da Galeria): volta para a raiz da aba
                         navController.popBackStack(item.rota, inclusive = false)
                     } else {
                         navController.navigate(item.rota) {
-                            // Remove as abas abertas até a base, guardando o estado delas
                             popUpTo(rotaBase) { saveState = true }
                             launchSingleTop = true
                             restoreState = true

@@ -51,20 +51,14 @@ import com.example.qualimagem.ui.jogo.CoresJogo
 import com.example.qualimagem.viewmodel.PeriodoRanking
 import com.example.qualimagem.viewmodel.RankingViewModel
 
-// Cores das medalhas do pódio
 private val Ouro = Color(0xFFF5B83D)
 private val Prata = Color(0xFFCBD5E1)
 private val Bronze = Color(0xFFD08A4E)
 
-/**
- * "Hall da fama": lista reativa dos placares salvos no Room,
- * com busca, filtros (categoria, nível, período), editar apelido (@Update) e apagar (@Delete).
- */
 @Composable
 fun RankingScreen(viewModel: RankingViewModel) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Estado só de interface (qual diálogo está aberto) fica na tela
     var placarParaEditar by remember { mutableStateOf<PlacarEntity?>(null) }
     var placarParaApagar by remember { mutableStateOf<PlacarEntity?>(null) }
 
@@ -93,7 +87,6 @@ fun RankingScreen(viewModel: RankingViewModel) {
             )
         }
 
-        // ---- Filtros em chips com menu ----
         item {
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -139,7 +132,6 @@ fun RankingScreen(viewModel: RankingViewModel) {
             item { RankingVazio() }
         }
 
-        // ---- Lista: a posição é o índice na lista já ordenada pelo ViewModel ----
         itemsIndexed(uiState.placares, key = { _, placar -> placar.id }) { indice, placar ->
             CardRanking(
                 posicao = indice + 1,
@@ -157,7 +149,6 @@ fun RankingScreen(viewModel: RankingViewModel) {
         }
     }
 
-    // ---- Diálogo de editar apelido (@Update) ----
     placarParaEditar?.let { placar ->
         var novoApelido by remember(placar.id) { mutableStateOf(placar.nomeJogador) }
         AlertDialog(
@@ -187,7 +178,6 @@ fun RankingScreen(viewModel: RankingViewModel) {
         )
     }
 
-    // ---- Confirmação de apagar (@Delete) ----
     placarParaApagar?.let { placar ->
         AlertDialog(
             onDismissRequest = { placarParaApagar = null },
@@ -212,7 +202,6 @@ fun RankingScreen(viewModel: RankingViewModel) {
     }
 }
 
-/** Card de uma posição. Top 3 ganham troféu colorido; o 1º lugar ganha o card dourado. */
 @Composable
 private fun CardRanking(
     posicao: Int,
@@ -238,7 +227,6 @@ private fun CardRanking(
             .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Posição (#1, #2...) com troféu para o pódio
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(36.dp)) {
             if (corMedalha != null) {
                 Icon(Icons.Outlined.EmojiEvents, contentDescription = null, tint = corMedalha, modifier = Modifier.size(20.dp))
@@ -253,7 +241,6 @@ private fun CardRanking(
 
         Spacer(Modifier.width(12.dp))
 
-        // Nome + categoria + acertos
         Column(Modifier.weight(1f)) {
             Text(
                 placar.nomeJogador,
@@ -275,7 +262,6 @@ private fun CardRanking(
             }
         }
 
-        // Pontos + ações
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 "${formatarPontos(placar.pontuacao)} pts",

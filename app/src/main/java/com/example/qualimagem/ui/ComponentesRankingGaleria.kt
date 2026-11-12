@@ -36,13 +36,6 @@ import com.example.qualimagem.ui.jogo.CoresJogo
 import java.text.NumberFormat
 import java.util.Locale
 
-/*
- * Componentes visuais das telas da Pessoa 4 (Ranking, Galeria e Detalhe).
- * Reaproveitam a paleta CoresJogo e o CampoTextoJogo/CaixaDestaque da parte 3
- * para que todas as telas tenham o mesmo visual do Figma.
- */
-
-/** Título grande + subtítulo + ícone redondo à direita ("Hall da fama", "Um mundo para ver"). */
 @Composable
 fun CabecalhoTela(titulo: String, subtitulo: String, icone: ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -63,7 +56,6 @@ fun CabecalhoTela(titulo: String, subtitulo: String, icone: ImageVector) {
     }
 }
 
-/** Chip de filtro. `ativo` = destacado em ciano; `habilitado = false` = bloqueado (ex.: "Em Breve"). */
 @Composable
 fun ChipFiltro(
     texto: String,
@@ -99,10 +91,6 @@ fun ChipFiltro(
     }
 }
 
-/**
- * Chip que abre um menu de opções ao tocar (usado nos filtros do ranking).
- * `opcoes` = lista de (texto exibido, ação ao escolher).
- */
 @Composable
 fun ChipMenu(
     texto: String,
@@ -138,7 +126,6 @@ fun ChipMenu(
     }
 }
 
-/** Etiqueta pequena colorida (categoria "Bandeiras", nível "Fácil"...). */
 @Composable
 fun TagPequena(texto: String, cor: Color, icone: ImageVector? = null, grande: Boolean = false) {
     Row(
@@ -157,7 +144,6 @@ fun TagPequena(texto: String, cor: Color, icone: ImageVector? = null, grande: Bo
     }
 }
 
-/** Linha de rodapé com ícone de informação ("Cada descoberta conta..."). */
 @Composable
 fun RodapeInfo(texto: String, modifier: Modifier = Modifier) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
@@ -167,11 +153,9 @@ fun RodapeInfo(texto: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** 2450 -> "2.450" (separador de milhar brasileiro). */
 fun formatarPontos(pontos: Int): String =
     NumberFormat.getIntegerInstance(Locale("pt", "BR")).format(pontos)
 
-/** A API devolve a região em inglês ("Asia"); aqui traduzimos para exibir. */
 fun traduzirRegiao(regiao: String): String = when (regiao.lowercase()) {
     "africa" -> "África"
     "americas" -> "Américas"

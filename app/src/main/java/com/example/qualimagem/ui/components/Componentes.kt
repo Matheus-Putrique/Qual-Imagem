@@ -38,12 +38,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/*
- * Componentes globais do app (Pessoa 5). Todos leem as cores do MaterialTheme,
- * que o Tema.kt define com a paleta escura do Figma.
- */
-
-/** Barra superior das telas internas: seta de voltar + título, sem fundo colorido (estilo Figma). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BarraTopo(
@@ -63,7 +57,6 @@ fun BarraTopo(
             }
         },
         actions = acoes,
-        // O Scaffold do AppNavigation já aplica o espaço da barra de status
         windowInsets = WindowInsets(0.dp),
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
@@ -74,10 +67,6 @@ fun BarraTopo(
     )
 }
 
-/**
- * Botão padrão em formato de pílula.
- * `secundario = true` gera a versão escura com borda (ex.: "Entrar como Administrador").
- */
 @Composable
 fun BotaoPrincipal(
     texto: String,
@@ -118,7 +107,6 @@ fun BotaoPrincipal(
     }
 }
 
-/** Card escuro com borda fina, sem sombra (no tema escuro a borda separa melhor que a sombra). */
 @Composable
 fun CardPadrao(
     modifier: Modifier = Modifier,
@@ -140,7 +128,6 @@ fun CardPadrao(
     }
 }
 
-/** Tela/área sem conteúdo: ícone + mensagem + subtítulo opcional. */
 @Composable
 fun EstadoVazio(
     mensagem: String,

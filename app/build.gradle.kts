@@ -50,16 +50,13 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.material.icons.extended)
 
-    // Room (Banco de Dados Local + Flow)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // Retrofit + Gson (Consumo da API REST Countries)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
 
-    // Coil (Carregamento das imagens das bandeiras via URL)
     implementation(libs.coil.compose)
 
     testImplementation(libs.junit)

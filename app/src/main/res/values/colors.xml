@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Fundo da janela antes do Compose desenhar (evita o "flash" branco ao abrir) -->
     <color name="fundo_app">#FF0A1228</color>
 </resources>

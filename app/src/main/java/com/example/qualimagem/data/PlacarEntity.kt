@@ -12,5 +12,5 @@ data class PlacarEntity(
     val pontuacao: Int,
     val acertos: Int,
     val dificuldade: String,
-    val dataHora: Long // Salvar o tempo em milissegundos
+    val dataHora: Long
 )

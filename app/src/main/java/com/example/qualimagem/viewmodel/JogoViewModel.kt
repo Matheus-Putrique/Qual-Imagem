@@ -15,11 +15,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * Motor da partida. Toda a regra do jogo fica aqui (e não na tela):
- * sorteio das perguntas e alternativas, vidas, pontos, dica,
- * avanço de rodada e gravação do placar no fim.
- */
 class JogoViewModel(
     private val quizRepository: QuizRepository,
     private val placarRepository: PlacarRepository
@@ -33,7 +28,6 @@ class JogoViewModel(
 
         val DIFICULDADES = listOf("Fácil", "Médio", "Difícil")
 
-        /** Pontos ganhos por acerto em cada nível. */
         fun pontosPorAcerto(dificuldade: String): Int = when (dificuldade) {
             "Médio" -> 150
             "Difícil" -> 200
@@ -44,10 +38,8 @@ class JogoViewModel(
     private val _uiState = MutableStateFlow(JogoUiState())
     val uiState: StateFlow<JogoUiState> = _uiState.asStateFlow()
 
-    /** Todos os itens do banco, sempre atualizados pelo Flow do Room. */
     private var todosItens: List<ItemQuizEntity> = emptyList()
 
-    /** Job do avanço automático, para poder cancelar se o jogador sair. */
     private var avancoAutomatico: Job? = null
 
     private var resultadoSalvo = false
@@ -56,14 +48,6 @@ class JogoViewModel(
         observarCategorias()
     }
 
-    // ------------------------------------------------------------------
-    // Tela de início
-    // ------------------------------------------------------------------
-
-    /**
-     * Coleta o Flow do Room: sempre que um item é inserido/removido
-     * (pela sincronização ou pelo Admin), os cards de categoria se atualizam sozinhos.
-     */
     private fun observarCategorias() {
         viewModelScope.launch {
             quizRepository.buscarTodos().collect { itens ->
@@ -107,10 +91,6 @@ class JogoViewModel(
         _uiState.update { it.copy(dificuldadeSelecionada = dificuldade, mensagemErro = null) }
     }
 
-    /**
-     * Atalho para quando o banco está vazio: baixa as bandeiras pela API
-     * (mesma função do Repository que o painel Admin usa).
-     */
     fun sincronizarBandeiras() {
         if (_uiState.value.sincronizando) return
 
@@ -132,14 +112,6 @@ class JogoViewModel(
         }
     }
 
-    // ------------------------------------------------------------------
-    // Início da partida
-    // ------------------------------------------------------------------
-
-    /**
-     * @param navegar true quando chamado pela tela inicial (precisa abrir o quiz);
-     * false no "Jogar novamente", que já está na tela do quiz.
-     */
     fun iniciarPartida(navegar: Boolean = true) {
         val estado = _uiState.value
         val apelido = estado.apelido.trim()
@@ -156,13 +128,11 @@ class JogoViewModel(
             _uiState.update { it.copy(carregando = true, mensagemErro = null) }
 
             try {
-                // Garante a lista mais recente do banco antes de sortear
                 val itens = quizRepository.buscarTodos().first()
                 todosItens = itens
 
                 val itensDaCategoria = itens.filter { it.categoria == categoria }
 
-                // Perguntas: só do nível escolhido, embaralhadas e sem repetição
                 val perguntas = itensDaCategoria
                     .filter { it.dificuldade.equals(dificuldade, ignoreCase = true) }
                     .distinctBy { it.id }
@@ -214,15 +184,10 @@ class JogoViewModel(
         }
     }
 
-    /** A tela avisa que já navegou, para não navegar de novo ao voltar. */
     fun navegacaoRealizada() {
         _uiState.update { it.copy(navegarParaQuiz = false) }
     }
 
-    /**
-     * Sorteia 1 resposta certa + 3 erradas da MESMA categoria.
-     * As erradas podem ser de qualquer nível, o que deixa as opções mais variadas.
-     */
     private fun criarAlternativas(
         correta: ItemQuizEntity,
         itensDaCategoria: List<ItemQuizEntity>
@@ -236,15 +201,10 @@ class JogoViewModel(
         return (erradas + correta).shuffled()
     }
 
-    // ------------------------------------------------------------------
-    // Durante a partida
-    // ------------------------------------------------------------------
-
     fun responder(alternativa: ItemQuizEntity) {
         val estado = _uiState.value
         val pergunta = estado.perguntaAtual ?: return
 
-        // Ignora toques repetidos ou fora de partida
         if (!estado.partidaIniciada || estado.respondida) return
 
         val acertou = alternativa.id == pergunta.id
@@ -262,7 +222,6 @@ class JogoViewModel(
             )
         }
 
-        // Mostra o feedback (verde/vermelho) por um instante e avança sozinho
         avancoAutomatico?.cancel()
         avancoAutomatico = viewModelScope.launch {
             delay(TEMPO_FEEDBACK_MS)
@@ -282,7 +241,6 @@ class JogoViewModel(
 
         val proximoIndice = estado.indicePerguntaAtual + 1
 
-        // Fim de jogo: acabaram as vidas ou as rodadas
         if (estado.vidasRestantes <= 0 || proximoIndice >= estado.perguntas.size) {
             finalizarPartida()
             return
@@ -304,7 +262,6 @@ class JogoViewModel(
         }
     }
 
-    /** Salva o placar no Room (via PlacarRepository) uma única vez por partida. */
     private fun finalizarPartida() {
         if (resultadoSalvo) return
         resultadoSalvo = true
@@ -333,7 +290,6 @@ class JogoViewModel(
         }
     }
 
-    /** Volta para a tela inicial (botão voltar ou "Voltar ao início"). */
     fun sairDaPartida() {
         avancoAutomatico?.cancel()
         _uiState.update {
@@ -352,7 +308,6 @@ class JogoViewModel(
         }
     }
 
-    /** "Jogar novamente": mesma categoria, nível e apelido. */
     fun jogarNovamente() {
         sairDaPartida()
         iniciarPartida(navegar = false)
